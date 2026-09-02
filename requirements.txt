@@ -1,0 +1,5 @@
+django~=6.0
+gunicorn
+psycopg2-binary
+python-dotenv
+whitenoise
