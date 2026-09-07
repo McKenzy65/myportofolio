@@ -1,8 +1,8 @@
-from django.contrib import admin
-from django.urls import path
-from portofolio.views import show_main  # Ganti show_main dengan nama fungsi di views.py kamu
+from django.shortcuts import render
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', show_main, name='show_main'),
-]
+def show_main(request):
+    context = {
+        'name': 'Paket Shop',
+        'class': 'PBP A',
+    }
+    return render(request, "main.html", context)
