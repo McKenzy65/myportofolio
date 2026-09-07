@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Me - Portofolio</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>My Portfolio</h1>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="profile-card">
+            <img src="{% static 'img/avatar.jpg' %}" alt="Foto Profil" class="profile-img">
+            <div class="bio">
+                <h2>Umar Faiz Rahman</h2>
+                <p><strong>NPM:</strong> 2506616711</p>
+                <p><strong>Program Studi:</strong> Sistem Informasi</p>
+                <p>Halo! Saya mahasiswa Fasilkom UI yang sedang mempelajari Pemrograman Berbasis Platform.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Umar Faiz Rahman. All rights reserved.</p>
+    </footer>
+</body>
+</html>
