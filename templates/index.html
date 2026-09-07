@@ -1,33 +1,61 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Me - Portofolio</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <title>Umar Faiz Rahman Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <h1>My Portfolio</h1>
-        </nav>
+    <header class="site-header">
+        <div class="container">
+            <a href="#profile" class="brand">Umar Faiz Rahman</a>
+            <nav>
+                <a href="#profile">Profile</a>
+            </nav>
+        </div>
     </header>
 
-    <main class="container">
-        <section class="profile-card">
-            <img src="{% static 'img/avatar.jpg' %}" alt="Foto Profil" class="profile-img">
-            <div class="bio">
-                <h2>Umar Faiz Rahman</h2>
-                <p><strong>NPM:</strong> 2506616711</p>
-                <p><strong>Program Studi:</strong> Sistem Informasi</p>
-                <p>Halo! Saya mahasiswa Fasilkom UI yang sedang mempelajari Pemrograman Berbasis Platform.</p>
+    <main>
+        <section class="hero" id="profile">
+            <div class="container hero-grid">
+                <div class="hero-identity">
+                    <p class="hero-kicker">Sistem Informasi &middot; Universitas Indonesia</p>
+                    <h1>Umar Faiz Rahman</h1>
+                </div>
+                <div class="hero-photo">
+                    <div class="photo-block"></div>
+                    <img class="avatar" src="/static/img/avatar.jpg" alt="Photo of Umar Faiz Rahman">
+                </div>
+                <div class="hero-details">
+                    <p class="bio">Halo! Saya mahasiswa Fasilkom UI yang sedang mempelajari Pemrograman Berbasis Platform.</p>
+                    <dl class="meta-list">
+                        <div class="meta-row">
+                            <dt>NPM</dt>
+                            <dd>2506616711</dd>
+                        </div>
+                        <div class="meta-row">
+                            <dt>Program</dt>
+                            <dd>S1 Sistem Informasi</dd>
+                        </div>
+                    </dl>
+                    <div class="social-links">
+                        <a href="https://github.com/" class="social-link">GitHub</a>
+                        <a href="https://gitlab.com/" class="social-link">GitLab</a>
+                        <a href="mailto:umar.faiz@ui.ac.id" class="social-link">Email</a>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <p>&copy; 2026 Umar Faiz Rahman. All rights reserved.</p>
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 Umar Faiz Rahman. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+        </div>
     </footer>
 </body>
 </html>

@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-wdqv5wr9$uc731zjtl&s*48rq$s)72(0(^qf$_&_r%n@l_9cy*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['umar.faiz-myportofolio.pws.cs.ui.ac.id', 'localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "umar-faiz-myportofolio.pws.cs.ui.ac.id"]
 
 
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,6 +78,9 @@ TEMPLATES = [
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+WHITENOISE_USE_FINDERS = True
 
 WSGI_APPLICATION = 'portofolio.wsgi.application'
 

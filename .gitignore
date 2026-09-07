@@ -7,10 +7,10 @@ venv/
 db.sqlite3
 __pycache__/
 *.pyc
+staticfiles/
 
 # OS & IDE Files
 .DS_Store
 .vscode/*
 !.vscode/settings.json
 .idea/
-```[cite: 1]
