@@ -1,37 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Umar Faiz Rahman Portfolio</title>
+    <title>Umar Faiz Rahman — Portofolio</title>
+    <meta name="description" content="Portofolio Umar Faiz Rahman, mahasiswa Sistem Informasi Fasilkom UI.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <a class="skip-link" href="#profile">Lompat ke konten</a>
+
     <header class="site-header">
         <div class="container">
             <a href="#profile" class="brand">Umar Faiz Rahman</a>
-            <nav>
-                <a href="#profile">Profile</a>
+            <nav aria-label="Navigasi utama">
+                <a href="#profile">Profil</a>
+                <a href="#skills">Skills</a>
+                <a href="#education">Pendidikan</a>
+                <a href="#projects">Proyek</a>
+                <a href="#experience">Pengalaman</a>
+                <a href="#certs">Sertifikasi</a>
             </nav>
         </div>
     </header>
 
     <main>
-        <section class="hero" id="profile">
+        <!-- ============ HERO / ABOUT ME ============ -->
+        <section class="hero" id="profile" aria-labelledby="hero-title">
+            <div class="hero-bg" aria-hidden="true"></div>
+
             <div class="container hero-grid">
                 <div class="hero-identity">
-                    <p class="hero-kicker">Sistem Informasi &middot; Universitas Indonesia</p>
-                    <h1>Umar Faiz Rahman</h1>
+                    <p class="hero-kicker">Sistem Informasi, Fakultas Ilmu Komputer UI</p>
+                    <h1 id="hero-title">Umar Faiz<br>Rahman</h1>
                 </div>
+
                 <div class="hero-photo">
                     <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/avatar.jpg" alt="Photo of Umar Faiz Rahman">
+                    <img class="avatar" src="/static/img/avatar.jpg" alt="Foto Umar Faiz Rahman" width="400" height="400">
                 </div>
+
                 <div class="hero-details">
-                    <p class="bio">Halo! Saya mahasiswa Fasilkom UI yang sedang mempelajari Pemrograman Berbasis Platform.</p>
+                    <p class="bio">
+                        Halo! Saya mahasiswa Sistem Informasi Fasilkom UI dengan minat di pengembangan web,
+                        AI, dan manajemen proyek. Juara 2 nasional Samsung Solve for Tomorrow 2024 lewat Dione AI,
+                        dan aktif di kepanitiaan serta organisasi kampus mulai dari back-end development
+                        sampai business development.
+                    </p>
                     <dl class="meta-list">
                         <div class="meta-row">
                             <dt>NPM</dt>
@@ -41,20 +59,314 @@
                             <dt>Program</dt>
                             <dd>S1 Sistem Informasi</dd>
                         </div>
+                        <div class="meta-row">
+                            <dt>Domisili</dt>
+                            <dd>Tangerang Selatan, Banten</dd>
+                        </div>
                     </dl>
                     <div class="social-links">
+                        <a href="https://www.linkedin.com/in/umar-faiz-rahman-880621310/" class="social-link">LinkedIn</a>
                         <a href="https://github.com/" class="social-link">GitHub</a>
-                        <a href="https://gitlab.com/" class="social-link">GitLab</a>
-                        <a href="mailto:umar.faiz@ui.ac.id" class="social-link">Email</a>
+                        <a href="mailto:umar.faiz@ui.ac.id" class="social-link social-link--ghost">Email</a>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ SKILLS ============ -->
+        <section class="section skills" id="skills" aria-labelledby="skills-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="skills-title">Skills</h2>
+                    <p>Hal-hal yang sudah saya pakai di kelas atau proyek pribadi, dan yang sedang saya pelajari.</p>
+                </div>
+
+                <div class="skills-columns">
+                    <div class="skill-group">
+                        <h3>Bahasa pemrograman</h3>
+                        <ul class="skill-list">
+                            <li class="skill skill--strong">Python</li>
+                            <li class="skill skill--strong">C++</li>
+                            <li class="skill">C#</li>
+                            <li class="skill">JavaScript</li>
+                            <li class="skill">HTML</li>
+                            <li class="skill">CSS</li>
+                        </ul>
+                    </div>
+                    <div class="skill-group">
+                        <h3>Bidang &amp; tools</h3>
+                        <ul class="skill-list">
+                            <li class="skill skill--strong">Web Development</li>
+                            <li class="skill skill--strong">Artificial Intelligence</li>
+                            <li class="skill">Machine Learning</li>
+                            <li class="skill">Game Development</li>
+                            <li class="skill">Git</li>
+                            <li class="skill">Microsoft Excel</li>
+                        </ul>
+                    </div>
+                    <div class="skill-group">
+                        <h3>Non-teknis</h3>
+                        <ul class="skill-list">
+                            <li class="skill skill--strong">Project Management</li>
+                            <li class="skill">Design Thinking</li>
+                            <li class="skill">Business Development</li>
+                            <li class="skill">Public Speaking</li>
+                            <li class="skill skill--learning">Django MVT</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <p class="skills-legend">
+                    <span class="legend-dot legend-dot--strong"></span> nyaman dipakai
+                    <span class="legend-dot"></span> pernah dipakai
+                    <span class="legend-dot legend-dot--learning"></span> sedang belajar
+                </p>
+            </div>
+        </section>
+
+        <!-- ============ EDUCATION ============ -->
+        <section class="section education" id="education" aria-labelledby="education-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="education-title">Pendidikan</h2>
+                </div>
+
+                <ol class="timeline">
+                    <li class="timeline-item">
+                        <span class="timeline-date">2025 — sekarang</span>
+                        <div class="timeline-body">
+                            <h3>Universitas Indonesia</h3>
+                            <p class="timeline-sub">S1 Sistem Informasi, Fakultas Ilmu Komputer</p>
+                            <p>Sedang mengambil mata kuliah Pemrograman Berbasis Platform, Struktur Data &amp; Algoritma, dan Basis Data.</p>
+                        </div>
+                    </li>
+                    <li class="timeline-item">
+                        <span class="timeline-date">2022 — 2025</span>
+                        <div class="timeline-body">
+                            <h3>MAN Insan Cendekia Batam</h3>
+                            <p class="timeline-sub">Jurusan IPA</p>
+                            <p>Mengasah kepemimpinan dan manajemen waktu, serta memulai proyek riset yang membawa saya ke Samsung Solve for Tomorrow dan Pesta Sains Nasional IPB.</p>
+                        </div>
+                    </li>
+                    <li class="timeline-item">
+                        <span class="timeline-date">2019 — 2022</span>
+                        <div class="timeline-body">
+                            <h3>SMPIT Cahaya Islam</h3>
+                        </div>
+                    </li>
+                    <li class="timeline-item">
+                        <span class="timeline-date">2013 — 2019</span>
+                        <div class="timeline-body">
+                            <h3>SDN Pakualam 01</h3>
+                        </div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ============ PROJECTS ============ -->
+        <!-- Filter di bawah murni CSS: radio input + selector :checked, tanpa JavaScript. -->
+        <section class="section projects" id="projects" aria-labelledby="projects-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="projects-title">Proyek</h2>
+                    <p>Beberapa hal yang pernah saya buat, dari tugas kuliah sampai eksperimen sendiri.</p>
+                </div>
+
+                <input type="radio" name="project-filter" id="filter-all" class="filter-input" checked>
+                <input type="radio" name="project-filter" id="filter-web" class="filter-input">
+                <input type="radio" name="project-filter" id="filter-python" class="filter-input">
+                <input type="radio" name="project-filter" id="filter-design" class="filter-input">
+
+                <div class="filter-bar" role="group" aria-label="Filter proyek">
+                    <label for="filter-all">Semua</label>
+                    <label for="filter-web">Web</label>
+                    <label for="filter-python">Python</label>
+                    <label for="filter-design">Desain</label>
+                </div>
+
+                <div class="project-grid">
+                    <article class="project" data-cat="python">
+                        <div class="project-thumb project-thumb--1" aria-hidden="true"></div>
+                        <div class="project-info">
+                            <h3>Dione AI — AI-Powered Learning System</h3>
+                            <p>Sebagai project lead, saya membangun platform edukasi yang memadukan AI dan IoT berbasis Arduino: absensi otomatis lewat face recognition, kontrol perangkat dengan perintah suara, pemantauan kelas real-time, dan ringkasan materi bertenaga AI. Prototipe meraih skor SUS 97%. Membawa tim menjadi Juara 2 Samsung Solve for Tomorrow Indonesia 2024.</p>
+                            <ul class="project-tags">
+                                <li>C++</li><li>AI</li><li>IoT</li><li>Arduino</li>
+                            </ul>
+                            <a class="project-link" href="https://news.samsung.com/id/inovasi-ai-terbaik-di-samsung-solve-for-tomorrow-buatan-anak-bangsa-untuk-indonesia">Baca liputannya</a>
+                        </div>
+                    </article>
+
+                    <article class="project" data-cat="web">
+                        <div class="project-thumb project-thumb--2" aria-hidden="true"></div>
+                        <div class="project-info">
+                            <h3>Portofolio pribadi</h3>
+                            <p>Halaman yang sedang kamu lihat. Dibangun dengan HTML5 dan CSS3 murni di atas proyek Django, termasuk filter proyek tanpa JavaScript ini.</p>
+                            <ul class="project-tags">
+                                <li>HTML</li><li>CSS</li><li>Django</li>
+                            </ul>
+                            <a class="project-link" href="https://github.com/">Lihat kode</a>
+                        </div>
+                    </article>
+
+                    <article class="project" data-cat="web">
+                        <div class="project-thumb project-thumb--4" aria-hidden="true"></div>
+                        <div class="project-info">
+                            <h3>SBF — proyek back-end BEM Fasilkom UI</h3>
+                            <p>Sebagai Back End Developer, ikut membangun sisi server untuk salah satu program kerja BEM Fasilkom UI, menangani logika data dan endpoint aplikasi.</p>
+                            <ul class="project-tags">
+                                <li>Back-End</li><li>Web</li>
+                            </ul>
+                            <a class="project-link" href="https://github.com/">Lihat kode</a>
+                        </div>
+                    </article>
+
+                    <article class="project" data-cat="design">
+                        <div class="project-thumb project-thumb--3" aria-hidden="true"></div>
+                        <div class="project-info">
+                            <h3>Game project — Infinite Learning</h3>
+                            <p>Ikut mengembangkan game sebagai Game Developer di program Infinite Learning, menangani gameplay programming dengan C# dan kolaborasi tim lewat Git.</p>
+                            <ul class="project-tags">
+                                <li>C#</li><li>Game Dev</li><li>Git</li>
+                            </ul>
+                            <a class="project-link" href="https://github.com/">Lihat kode</a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ EXPERIENCE ============ -->
+        <section class="section experience" id="experience" aria-labelledby="experience-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="experience-title">Pengalaman</h2>
+                </div>
+
+                <ul class="exp-list">
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2026</span>
+                            <span class="exp-org">COMPFEST</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Finance</h3>
+                            <p>Mengelola operational excellence dan pengelolaan keuangan salah satu acara teknologi mahasiswa terbesar di Indonesia.</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2026</span>
+                            <span class="exp-org">Dasar-Dasar Pemrograman 0</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Co-PIC Business Development</h3>
+                            <p>Memimpin pengembangan bisnis dan pengelolaan keuangan program pengenalan pemrograman (hybrid).</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2026</span>
+                            <span class="exp-org">GDGoC UI</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Software Engineer</h3>
+                            <p>Web development bersama Google Developer Groups on Campus Universitas Indonesia.</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2026</span>
+                            <span class="exp-org">BETIS Fasilkom UI</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Business Development</h3>
+                            <p>Mengembangkan kerja sama dan pendanaan untuk program bimbingan tes masuk Fasilkom UI.</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2025</span>
+                            <span class="exp-org">OIM UI</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>BPH — Olimpiade Ilmiah Mahasiswa UI</h3>
+                            <p>Badan Pengurus Harian; terlibat dalam diskusi kelompok dan kepanitiaan acara ilmiah tingkat universitas.</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2025</span>
+                            <span class="exp-org">BEM Fasilkom UI</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Back End Developer, SBF</h3>
+                            <p>Mengembangkan sisi back-end salah satu program kerja BEM Fakultas Ilmu Komputer UI.</p>
+                        </div>
+                    </li>
+                    <li class="exp-item">
+                        <div class="exp-meta">
+                            <span class="exp-date">2025 — kini</span>
+                            <span class="exp-org">UKM Catur UI</span>
+                        </div>
+                        <div class="exp-body">
+                            <h3>Anggota</h3>
+                            <p>Aktif berlatih dan mengikuti kegiatan Unit Kegiatan Mahasiswa Catur Universitas Indonesia.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ============ ACHIEVEMENTS & CERTIFICATIONS ============ -->
+        <section class="section certs" id="certs" aria-labelledby="certs-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
+                    <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
+                </div>
+
+                <div class="cert-grid">
+                    <article class="cert cert--highlight">
+                        <span class="cert-year">2024</span>
+                        <h3>Juara 2 Samsung Solve for Tomorrow Indonesia</h3>
+                        <p>Samsung Electronics — lewat inovasi Dione AI. Prototipe meraih skor usability (SUS) 97%.</p>
+                    </article>
+                    <article class="cert">
+                        <span class="cert-year">2024</span>
+                        <h3>Finalist STEM Young Researcher Award</h3>
+                        <p>Pesta Sains Nasional, IPB University.</p>
+                    </article>
+                    <article class="cert">
+                        <span class="cert-year">2026</span>
+                        <h3>Google Project Management (Professional Certificate)</h3>
+                        <p>Google — spesialisasi lengkap via Coursera.</p>
+                    </article>
+                    <article class="cert">
+                        <span class="cert-year">2024</span>
+                        <h3>IELTS</h3>
+                        <p>British Council.</p>
+                    </article>
+                    <article class="cert">
+                        <span class="cert-year">2026</span>
+                        <h3>UKBI — Predikat Unggul</h3>
+                        <p>Kemendikbud, skor 632.</p>
+                    </article>
+                    <article class="cert">
+                        <span class="cert-year">2024</span>
+                        <h3>Design Thinking</h3>
+                        <p>Samsung Indonesia.</p>
+                    </article>
                 </div>
             </div>
         </section>
     </main>
 
     <footer class="site-footer">
-        <div class="container">
+        <div class="container footer-grid">
             <p>&copy; 2026 Umar Faiz Rahman. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+            <a href="#profile" class="back-top">Kembali ke atas</a>
         </div>
     </footer>
 </body>
