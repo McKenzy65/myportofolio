@@ -5,4 +5,4 @@ def show_main(request):
         'name': 'Paket Shop',
         'class': 'PBP A',
     }
-    return render(request, "main.html", context)
+    return render(request, "index.html", context)
