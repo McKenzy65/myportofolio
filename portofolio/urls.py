@@ -1,8 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include
-# import view kamu di sini jika langsung dipanggil
+from django.urls import path
+from portofolio.views import show_main  
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('main.urls')), 
+    path('', show_main, name='show_main'),  
 ]
