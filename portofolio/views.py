@@ -1,4 +1,8 @@
-from django.shortcuts import render
+from django.contrib import admin
+from django.urls import path
+from portofolio.views import show_main  # Ganti show_main dengan nama fungsi di views.py kamu
 
-def landing_page(request):
-    return render(request, "index.html")
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', show_main, name='show_main'),
+]
