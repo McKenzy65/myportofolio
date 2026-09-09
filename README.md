@@ -80,3 +80,30 @@ Masalah yang paling lama diselesaikan adalah membuat GIF latar menyatu dengan wa
 **Keterbatasan AI yang saya temui:** AI tidak tahu data pribadi saya, jadi semua isi konten tetap harus saya tulis ulang. AI juga tidak bisa melihat hasil render di browser saya, sehingga pengecekan tampilan di berbagai ukuran layar tetap saya lakukan sendiri.
 
 **Log percakapan:** 
+
+
+
+
+
+### Jawaban Pertanyaan Refleksi Tutorial 2
+
+1. **Jelaskan alur request-response pada Django secara singkat!**
+   - **Client**: Pengguna mengirimkan *request* HTTP melalui browser (misal: mengakses `/`).
+   - **urls.py**: Django mencocokkan URL yang diminta dengan pola yang terdaftar.
+   - **views.py**: Fungsi *view* yang sesuai dieksekusi untuk memproses logika bisnis dan mengambil data dari Model.
+   - **models.py**: Menghubungkan Django ke database menggunakan ORM untuk mengambil data yang dibutuhkan.
+   - **templates**: *View* menggabungkan data dari Model ke dalam file HTML (*template*) menggunakan Django Template Language (DTL).
+   - **Response**: Django mengembalikan berkas HTML yang sudah dirender sebagai *HTTP Response* ke browser pengguna.
+
+2. **Apa fungsi dari Virtual Environment (`env`) dan apa yang terjadi jika tidak menggunakannya?**
+   - *Virtual Environment* digunakan untuk mengisolasi dependensi dan versi pustaka (*library*) proyek agar tidak bentrok dengan proyek lain atau Python global di komputer.
+   - Jika tidak menggunakannya, instalasi pustaka akan bersifat global. Hal ini dapat menyebabkan konflik versi antarproyek dan menyulitkan proses *deployment* karena dependensi proyek menjadi tidak teracak dengan jelas.
+
+3. **Mengapa kita menggunakan Django ORM alih-alih menulis SQL manual?**
+   - **Abstraksi & Kemudahan**: Kita dapat mengoperasikan database menggunakan sintaks Python biasa tanpa perlu menulis kueri SQL yang kompleks.
+   - **Keamanan**: Django ORM secara otomatis melindungi aplikasi dari serangan *SQL Injection*.
+   - **Portabilitas**: Memudahkan pergantian jenis database (misal dari SQLite ke PostgreSQL) tanpa perlu mengubah kode kueri di *views*.
+
+4. **Apa fungsi dari Git dan GitHub dalam pengembangan perangkat lunak?**
+   - **Git**: Sebagai *Version Control System* (VCS) lokal yang mencatat setiap perubahan kode (*commit*), memungkinkan kolaborasi, serta memfasilitasi pembuatan *branch* dan pemulihan kode (*rollback*) jika terjadi kesalahan.
+   - **GitHub**: Layanan *cloud hosting* untuk menyimpan repositori Git secara terpusat, memudahkan kolaborasi antartim, peninjauan kode (*code review*), serta integrasi *continuous integration/deployment* (CI/CD).
