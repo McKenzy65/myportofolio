@@ -58,6 +58,29 @@ Refleksi proses
 
 Masalah yang paling lama diselesaikan adalah membuat GIF latar menyatu dengan warna dasar tanpa menutupi teks. Percobaan pertama memakai opacity saja, hasilnya teks di sisi kiri tetap sulit dibaca. Solusi akhirnya adalah dua lapisan: mask-image gradient untuk memudarkan tepi GIF, ditambah pseudo-element ::after dengan gradient gelap di atasnya. Untuk memastikan responsif, halaman dicek di lebar 1280px dan 390px setiap kali ada perubahan layout.
 
+
+### Tugas 2
+
+- yang dikerjakan:
+
+1. menambahkan model `Certification` pada aplikasi `main` dgn field `title`, `description`, `year` dan `is_highlight`
+2. membuat dan menerapkan migrasi model (`0002_certification.py`), include migrasi data (`0003_populate_certifications.py`) yg memindahkan 6 entri sertifikasi yg sebelumnya hard coded di `index.html` menjadi data pada database
+3. membuat view `show_certifications` yg mengambil seluruh `Certification` dari database lalu meneruskannya sebagai context ke template baru
+4. membuat page baru `templates/certifications.html` yg bisa diakses dari URL `/certifications/` (named route `main:show_certifications`), (terpisah dari halaman utama yang memuat bagian Pengalaman)
+5. memindahkan section "Penghargaan & sertifikasi" dari `index.html` ke halaman barunya, lalu mengubah navbar pada kedua halaman agar memakai tag `{% url %}` supaya konsisten dan tidak ada tautan hardcoded
+6. menambahkan tampilan kondisi kosong ("Belum ada data sertifikasi di database") ketika belom ada data `Certification`
+7. menambahkan 5 unit test baru untuk `Certification`: URL dan template yang dipakai, pembuatan objek model, data muncul di halaman HTML, dan pesan kondisi kosong ketika data belum ada
+
+- Pertanyaan reflektif
+
+1. ketika pengguna membuka halaman `/certifications/`, browser mengirim HTTP request ke server Django. lalu `urls.py` milik proyek (`portofolio/urls.py`) menerima request tersebut lebih dulu dan lewat `include('main.urls')`, mendelegasikann pencocokan path ke `urls.py` milik aplikasi `main`. di `main/urls.py` path `certifications/` dicocokkan dengan named route `main:show_certifications` yg terhubung ke fungsi `show_certifications` di `main/views.py` view tersebut memanggil `Certification.objects.all()` buat ngambil semua baris tabel `Certification` lewat django ORM, sesuai skema yang didefinisikan di `main/models.py`, lalu memasukkan hasilnya ke dalam dict context dan memanggil `render(request, 'certifications.html', context)`. django mencari `certifications.html` di folder `templates/` (sesuai `TEMPLATES['DIRS']` pada `settings.py`), merender template tersebut dengan context yang diberikan, bagian `{% for cert in certification_list %}` melakukan looping pada queryset dan menyisipkan nilai tiap field ke HTML dan hasil akhirnya dikembalikan sebagai response HTML yg ditampilkan browser ke user
+
+2. data sebaiknya disimpan di model, bukan dicode langsung di template, karna keduanya memisahkan tanggung jawab sesuai pola MVT(model mengurus struktur dan penyimpanan data) sedangkan template hanya mengurus cara data itu ditampilin. jika data hardcoded di HTML, menambah atau mengubah satu sertifikasi berarti mengedit kode dan mendeploy ulang aplikasi, sering typo dan gampang tidak konsisten antar entri karena disalin manual, jika data disimpen di model,, penambahan atau perubahan data cukup pakai django admin atau ORM tanpa menyentuh template maupun deployment ulang. strukturnya konsisten karna dihasilkan otomatis oleh satu blok loop template dan tipe datanya bisa divalidasi oleh django (misalnya `year` wajib berupa angka) aplikasi menajdi lebih mudah dimaintanance dan dikembangkan seiring bertambahnya data
+
+3. `makemigrations` mengread perubahan yg dibuat pada `models.py` (menambah model baru, menambah/mengubah/menghapus field dan sebagainyaa) lalu menghasilkan berkas migrasi yg mendeskripsikan perubahan tersebut secara deklaratif, tanpa menyentuh database sama sekali
+
+`migrate` memigrasi berkas2 tersebut secara berurutan utk make sure menerapkan perubahan tersebut (skema tabel, maupun perubahan data dari `RunPython`) ke database yg sedang dipakai, contoh pada tugas ini: menambahkan model `Certification` mengharuskan `makemigrations` dijalankan lebih dulu utk menghasilkan `0002_certification.py`, lalu `migrate` dijalankan supaya tabel `main_certification` benar2 dibuat di `db.sqlite3`. contoh lain, migrasi data `0003_populate_certifications.py` yang memindahkan 6 sertifikasi hard coded ke database juga baru benar2 mengisi datanya setelah `migrate` dijalankan
+
 ---
 
 ## AI Disclosure
@@ -79,6 +102,26 @@ Masalah yang paling lama diselesaikan adalah membuat GIF latar menyatu dengan wa
 
 **Keterbatasan AI yang saya temui:** AI tidak tahu data pribadi saya, jadi semua isi konten tetap harus saya tulis ulang. AI juga tidak bisa melihat hasil render di browser saya, sehingga pengecekan tampilan di berbagai ukuran layar tetap saya lakukan sendiri.
 
-**Log percakapan:** 
+Log percakapan:
+
+### Tugas 2
+
+Tools yang dipakai: Claude Code (Claude Sonnet 5, Anthropic).
+
+Bagian yang dibantu AI
+
+1. Penulisan unit test untuk `Certification`
+
+Strategi prompting: saya mmeminta AI membaca struktur proyek portofolio yang sudah ada (hasil Tutorial 02) untuk membuatkan unit test yang benar dan best practice
+
+Perbaikan serta verifikasi manual yang saya lakukan
+
+1. implementasi model `Certification`, migrasi (includee migrasi data), view `show_certifications`, URL dan template `certifications.html`, mengikuti pola MVT yang sudah ada pada `Experience` di Tutorial 02
+2. pemindahan section "Penghargaan & sertifikasi" dari `index.html` ke page baru, dan penyesuaian navbar di kedua page agar memakai tag `{% url %}`
+3. penulisan draf awal jawaban pertanyaan reflektif di atas
+4. menjalankan `python manage.py test` dan `python manage.py runserver` utk memastikan seluruh test passed dan berhasil dan kedua halaman (utama, sertifikasi) bener2 muncul dengan data yg sesuai di browser
+5. meninjau ulang (me-make sure) isi migrasi data agar 6 sertifikasi yg dipindah sama persis dengan yg sebelumnya ada di `index.html`
+
+Keterbatasan AI yang saya temui: AI perlu diarahkan untuk memperbaiki satu unit test yang gagal karena migrasi data mengisi database test dengan data awal, sehingga kondisi "kosong" harus dites dengan menghapus data lebih dulu
 
 
