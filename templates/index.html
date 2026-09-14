@@ -18,12 +18,12 @@
         <div class="container">
             <a href="#profile" class="brand">{{ name }}</a>
             <nav aria-label="Navigasi utama">
-                <a href="#profile">Profil</a>
-                <a href="#skills">Skills</a>
-                <a href="#education">Pendidikan</a>
-                <a href="#projects">Proyek</a>
-                <a href="#experience">Pengalaman</a>
-                <a href="#certs">Sertifikasi</a>
+                <a href="{% url 'main:show_main' %}#profile">Profil</a>
+                <a href="{% url 'main:show_main' %}#skills">Skills</a>
+                <a href="{% url 'main:show_main' %}#education">Pendidikan</a>
+                <a href="{% url 'main:show_main' %}#projects">Proyek</a>
+                <a href="{% url 'main:show_main' %}#experience">Pengalaman</a>
+                <a href="{% url 'main:show_certifications' %}">Sertifikasi</a>
             </nav>
         </div>
     </header>
@@ -254,47 +254,6 @@
         </ul>
     </div>
 </section>
-        <section class="section certs" id="certs" aria-labelledby="certs-title">
-            <div class="container">
-                <div class="section-head">
-                    <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
-                    <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
-                </div>
-
-                <div class="cert-grid">
-                    <article class="cert cert--highlight">
-                        <span class="cert-year">2024</span>
-                        <h3>Juara 2 Samsung Solve for Tomorrow Indonesia</h3>
-                        <p>Samsung Electronics ,  lewat inovasi Dione AI. Prototipe meraih skor usability (SUS) 97%.</p>
-                    </article>
-                    <article class="cert">
-                        <span class="cert-year">2024</span>
-                        <h3>Finalist STEM Young Researcher Award</h3>
-                        <p>Pesta Sains Nasional, IPB University.</p>
-                    </article>
-                    <article class="cert">
-                        <span class="cert-year">2026</span>
-                        <h3>Google Project Management (Professional Certificate)</h3>
-                        <p>Google ,  spesialisasi lengkap via Coursera.</p>
-                    </article>
-                    <article class="cert">
-                        <span class="cert-year">2024</span>
-                        <h3>IELTS</h3>
-                        <p>British Council.</p>
-                    </article>
-                    <article class="cert">
-                        <span class="cert-year">2026</span>
-                        <h3>UKBI ,  Predikat Unggul</h3>
-                        <p>Kemendikbud, skor 632.</p>
-                    </article>
-                    <article class="cert">
-                        <span class="cert-year">2024</span>
-                        <h3>Design Thinking</h3>
-                        <p>Samsung Indonesia.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer class="site-footer">

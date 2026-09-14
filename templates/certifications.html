@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sertifikasi - {{ name }} - Portofolio</title>
+    <meta name="description" content="Penghargaan dan sertifikasi {{ name }}, mahasiswa Fasilkom UI.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <a class="skip-link" href="#certs">Lompat ke konten</a>
+
+    <header class="site-header">
+        <div class="container">
+            <a href="{% url 'main:show_main' %}#profile" class="brand">{{ name }}</a>
+            <nav aria-label="Navigasi utama">
+                <a href="{% url 'main:show_main' %}#profile">Profil</a>
+                <a href="{% url 'main:show_main' %}#skills">Skills</a>
+                <a href="{% url 'main:show_main' %}#education">Pendidikan</a>
+                <a href="{% url 'main:show_main' %}#projects">Proyek</a>
+                <a href="{% url 'main:show_main' %}#experience">Pengalaman</a>
+                <a href="{% url 'main:show_certifications' %}">Sertifikasi</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="section certs" id="certs" aria-labelledby="certs-title">
+            <div class="container">
+                <div class="section-head">
+                    <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
+                    <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
+                </div>
+
+                <div class="cert-grid">
+                    {% for cert in certification_list %}
+                    <article class="cert{% if cert.is_highlight %} cert--highlight{% endif %}">
+                        <span class="cert-year">{{ cert.year }}</span>
+                        <h3>{{ cert.title }}</h3>
+                        <p>{{ cert.description }}</p>
+                    </article>
+                    {% empty %}
+                    <p>Belum ada data sertifikasi di database.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+            <a href="{% url 'main:show_main' %}#profile" class="back-top">Kembali ke atas</a>
+        </div>
+    </footer>
+</body>
+</html>
