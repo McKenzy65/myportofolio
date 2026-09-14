@@ -12,6 +12,7 @@
      9. Footer
     10. Animasi masuk
     11. Responsif
+    12. Mode terang (data-theme="light")
    ===================================================================== */
 
 
@@ -192,6 +193,45 @@ ul, ol {
 .site-header nav a:hover::after {
     transform: scaleX(1);
 }
+
+.nav-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* Tombol ganti tema, ikon bulan/matahari ditukar lewat data-theme */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+.theme-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: currentColor;
+}
+
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
 
 
 /* ---------- 4. Hero / About Me ---------- */
@@ -955,4 +995,42 @@ ul, ol {
     .cert--highlight {
         grid-column: auto;
     }
+
+    [data-theme="light"] .hero-bg::after {
+        background: linear-gradient(to bottom, rgba(246, 243, 251, 0.35), var(--bg));
+    }
+}
+
+
+/* ---------- 12. Mode terang (data-theme="light") ---------- */
+
+[data-theme="light"] {
+    --bg: #f6f3fb;
+    --bg-raised: #ffffff;
+    --ink: #1c1330;
+    --ink-soft: #453a5e;
+    --text-muted: #6c6280;
+    --accent: #7c3aed;
+    --accent-2: #c026a3;
+    --accent-dark: #5b21b6;
+    --line: rgba(124, 58, 237, 0.16);
+    --line-strong: rgba(124, 58, 237, 0.36);
+}
+
+/* Warna berikut ditulis literal (bukan var()) di tempat asalnya,
+   jadi perlu di-override terpisah untuk mode terang. */
+[data-theme="light"] .site-header {
+    background-color: rgba(246, 243, 251, 0.82);
+}
+
+[data-theme="light"] .hero-bg::after {
+    background: linear-gradient(to right, var(--bg) 20%, rgba(246, 243, 251, 0.55) 70%, rgba(246, 243, 251, 0.75));
+}
+
+[data-theme="light"] .project-thumb {
+    background-color: #ece5fa;
+}
+
+[data-theme="light"] .project-tags li {
+    background-color: rgba(28, 19, 48, 0.06);
 }
