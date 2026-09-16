@@ -1,10 +1,9 @@
-{% load static %}
-<!DOCTYPE html>
+{% extends 'base.html' %}
 
-
+{% block meta %}
 <title>Sertifikasi - {{ name }} - Portofolio</title>
 <meta name="description" content="Penghargaan dan sertifikasi {{ name }}, mahasiswa Fasilkom UI.">
-
+{% endblock meta %}
 
 {% block content %}
 <main>
@@ -30,35 +29,3 @@
     </section>
 </main>
 {% endblock content %}
-<body>
-    <a class="skip-link" href="#certs">Lompat ke konten</a>
-
-    
-
-    <main>
-        <section class="section certs" id="certs" aria-labelledby="certs-title">
-            <div class="container">
-                <div class="section-head">
-                    <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
-                    <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
-                </div>
-
-                <div class="cert-grid">
-                    {% for cert in certification_list %}
-                    <article class="cert{% if cert.is_highlight %} cert--highlight{% endif %}">
-                        <span class="cert-year">{{ cert.year }}</span>
-                        <h3>{{ cert.title }}</h3>
-                        <p>{{ cert.description }}</p>
-                    </article>
-                    {% empty %}
-                    <p>Belum ada data sertifikasi di database.</p>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-    </main>
-
-
-    <script src="{% static 'js/theme.js' %}"></script>
-</body>
-</html>

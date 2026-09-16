@@ -200,7 +200,7 @@ ul, ol {
     gap: 1.5rem;
 }
 
-/* Tombol ganti tema, ikon bulan/matahari ditukar lewat data-theme */
+
 .theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -243,8 +243,7 @@ ul, ol {
     isolation: isolate;
 }
 
-/* Latar partikel (bg_web.gif) ditempatkan di sisi kanan lalu di-mask
-   supaya menyatu dengan warna dasar dan teks tetap terbaca. */
+
 .hero-bg {
     position: absolute;
     inset: 0;
@@ -263,7 +262,7 @@ ul, ol {
     mask-composite: intersect;
 }
 
-/* lapisan gelap tipis di atas GIF agar kontras teks aman */
+
 .hero-bg::after {
     content: "";
     position: absolute;
@@ -422,7 +421,7 @@ ul, ol {
     background-color: rgba(180, 107, 255, 0.08);
 }
 
-/* titik indikator tingkat penguasaan */
+
 .skill::before {
     content: "";
     width: 8px;
@@ -481,7 +480,7 @@ ul, ol {
     max-width: 760px;
 }
 
-/* garis vertikal timeline */
+/* garis timeline */
 .timeline::before {
     content: "";
     position: absolute;
@@ -548,7 +547,7 @@ ul, ol {
 }
 
 
-/* ---------- 7. Proyek (grid + filter tanpa JS) ---------- */
+/* ---------- 7. Proyek ---------- */
 
 .filter-input {
     position: absolute;
@@ -579,7 +578,7 @@ ul, ol {
     color: var(--ink);
 }
 
-/* label yang sedang aktif */
+/* label yg lagi aktif */
 #filter-all:checked    ~ .filter-bar label[for="filter-all"],
 #filter-web:checked    ~ .filter-bar label[for="filter-web"],
 #filter-python:checked ~ .filter-bar label[for="filter-python"],
@@ -589,7 +588,7 @@ ul, ol {
     color: var(--bg);
 }
 
-/* sembunyikan proyek yang tidak cocok dengan filter */
+/* hide proyek yg g cocok sma filter */
 #filter-web:checked    ~ .project-grid .project:not([data-cat="web"]),
 #filter-python:checked ~ .project-grid .project:not([data-cat="python"]),
 #filter-design:checked ~ .project-grid .project:not([data-cat="design"]) {
@@ -708,7 +707,7 @@ ul, ol {
 }
 
 
-/* ---------- 8. Pengalaman ---------- */
+/* ---------- 8. pengalaman ---------- */
 
 .exp-list {
     border-top: 1px solid var(--line);
@@ -752,7 +751,7 @@ ul, ol {
 }
 
 
-/* ---------- 8b. Penghargaan & sertifikasi ---------- */
+/* ---------- 8b. penghargaan & sertifikasi ---------- */
 
 .cert-grid {
     display: grid;
@@ -819,7 +818,7 @@ ul, ol {
 }
 
 
-/* ---------- 9. Footer ---------- */
+/* ---------- 9. footer ---------- */
 
 .site-footer {
     padding: 2rem 0;
@@ -846,8 +845,7 @@ ul, ol {
 }
 
 
-/* ---------- 10. Animasi masuk ---------- */
-/* Hanya satu momen animasi: hero saat halaman pertama dibuka. */
+/* ---------- 10. animasi masuk ---------- */
 
 @keyframes rise {
     from {
@@ -883,7 +881,7 @@ ul, ol {
 }
 
 
-/* ---------- 11. Responsif ---------- */
+/* ---------- 11. responsif ---------- */
 
 @media (max-width: 860px) {
     .section-head {
@@ -951,7 +949,7 @@ ul, ol {
         justify-self: start;
     }
 
-    /* di layar sempit GIF dipindah ke bagian atas hero */
+    /* penyesuaian klo misal layar device sempit */
     .hero-bg {
         -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 85%);
         mask-image: linear-gradient(to bottom, #000 30%, transparent 85%);
@@ -1002,7 +1000,7 @@ ul, ol {
 }
 
 
-/* ---------- 12. Mode terang (data-theme="light") ---------- */
+/* ---------- 12. light mode (data-theme="light") ---------- */
 
 [data-theme="light"] {
     --bg: #f6f3fb;
@@ -1017,8 +1015,7 @@ ul, ol {
     --line-strong: rgba(124, 58, 237, 0.36);
 }
 
-/* Warna berikut ditulis literal (bukan var()) di tempat asalnya,
-   jadi perlu di-override terpisah untuk mode terang. */
+
 [data-theme="light"] .site-header {
     background-color: rgba(246, 243, 251, 0.82);
 }
