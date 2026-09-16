@@ -20,6 +20,7 @@
                     <span class="cert-year">{{ cert.year }}</span>
                     <h3>{{ cert.title }}</h3>
                     <p>{{ cert.description }}</p>
+                    {% include "components/certification_delete_modal.html" with cert=cert %}
                 </article>
                 {% empty %}
                 <p>Belum ada data sertifikasi di database.</p>

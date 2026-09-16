@@ -1,8 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from main.models import Experience, Certification
 from main.forms import CertificationForm
-
 
 PORTFOLIO_OWNER = 'Umar Faiz Rahman'
 
@@ -40,3 +39,13 @@ def create_certification(request):
         "form": form,
     }
     return render(request, "certification_form.html", context)
+
+def delete_certification(request, certification_id):
+    Certification = get_object_or_404(Certification, pk=certification_id)
+
+    if request.method == "POST":
+        Certification.delete()
+        messages.success(request, "Sertifikasi berhasil dihapus")
+        return redirect("main:show_certifications")
+
+    return redirect("main:show_certifications")
