@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from main.models import Experience, Certification
 from main.forms import CertificationForm
+from django.http import HttpResponse
+from django.core import serializers
 
 PORTFOLIO_OWNER = 'Umar Faiz Rahman'
 
@@ -41,11 +43,21 @@ def create_certification(request):
     return render(request, "certification_form.html", context)
 
 def delete_certification(request, certification_id):
-    Certification = get_object_or_404(Certification, pk=certification_id)
+    certification = get_object_or_404(Certification, pk=certification_id)
 
     if request.method == "POST":
-        Certification.delete()
+        certification.delete()
         messages.success(request, "Sertifikasi berhasil dihapus")
         return redirect("main:show_certifications")
 
     return redirect("main:show_certifications")
+
+def get_certifications_json(request):
+    title_query = request.GET.get("title", "").strip()
+    certifications = Certification.objects.all()
+
+    if title_query:
+        certifications = certifications.filter(title__icontains=title_query)
+
+    certifications_json = serializers.serialize("json", certifications)
+    return HttpResponse(certifications_json, content_type="application/json")
