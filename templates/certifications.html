@@ -1,46 +1,39 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sertifikasi - {{ name }} - Portofolio</title>
-    <meta name="description" content="Penghargaan dan sertifikasi {{ name }}, mahasiswa Fasilkom UI.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <script>
-        (function () {
-            var stored = null;
-            try { stored = localStorage.getItem('theme'); } catch (e) {}
-            var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-</head>
+
+
+<title>Sertifikasi - {{ name }} - Portofolio</title>
+<meta name="description" content="Penghargaan dan sertifikasi {{ name }}, mahasiswa Fasilkom UI.">
+
+
+{% block content %}
+<main>
+    <section class="section certs" id="certs" aria-labelledby="certs-title">
+        <div class="container">
+            <div class="section-head">
+                <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
+                <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
+            </div>
+
+            <div class="cert-grid">
+                {% for cert in certification_list %}
+                <article class="cert{% if cert.is_highlight %} cert--highlight{% endif %}">
+                    <span class="cert-year">{{ cert.year }}</span>
+                    <h3>{{ cert.title }}</h3>
+                    <p>{{ cert.description }}</p>
+                </article>
+                {% empty %}
+                <p>Belum ada data sertifikasi di database.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock content %}
 <body>
     <a class="skip-link" href="#certs">Lompat ke konten</a>
 
-    <header class="site-header">
-        <div class="container">
-            <a href="{% url 'main:show_main' %}#profile" class="brand">{{ name }}</a>
-            <div class="nav-wrap">
-                <nav aria-label="Navigasi utama">
-                    <a href="{% url 'main:show_main' %}#profile">Profil</a>
-                    <a href="{% url 'main:show_main' %}#skills">Skills</a>
-                    <a href="{% url 'main:show_main' %}#education">Pendidikan</a>
-                    <a href="{% url 'main:show_main' %}#projects">Proyek</a>
-                    <a href="{% url 'main:show_main' %}#experience">Pengalaman</a>
-                    <a href="{% url 'main:show_certifications' %}">Sertifikasi</a>
-                </nav>
-                <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Ganti ke mode terang">
-                    <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"/></svg>
-                    <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a1 1 0 0 1-1-1V2a1 1 0 1 1 2 0v1.5a1 1 0 0 1-1 1Zm0 15a1 1 0 0 1 1 1V22a1 1 0 1 1-2 0v-1.5a1 1 0 0 1 1-1ZM4.5 12a1 1 0 0 1-1 1H2a1 1 0 1 1 0-2h1.5a1 1 0 0 1 1 1Zm15 0a1 1 0 0 1 1-1H22a1 1 0 1 1 0 2h-1.5a1 1 0 0 1-1-1ZM6.34 7.76a1 1 0 0 1-1.41 0L3.87 6.7a1 1 0 1 1 1.41-1.41L6.34 6.34a1 1 0 0 1 0 1.42Zm12.02 12.02a1 1 0 0 1-1.41 0l-1.06-1.06a1 1 0 1 1 1.41-1.41l1.06 1.06a1 1 0 0 1 0 1.41ZM6.34 16.24a1 1 0 0 1 0 1.42l-1.06 1.06a1 1 0 1 1-1.41-1.41l1.06-1.06a1 1 0 0 1 1.41 0Zm12.02-12.02a1 1 0 0 1 0 1.41l-1.06 1.06a1 1 0 1 1-1.41-1.41l1.06-1.06a1 1 0 0 1 1.41 0ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"/></svg>
-                </button>
-            </div>
-        </div>
-    </header>
+    
 
     <main>
         <section class="section certs" id="certs" aria-labelledby="certs-title">
@@ -65,12 +58,6 @@
         </section>
     </main>
 
-    <footer class="site-footer">
-        <div class="container footer-grid">
-            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-            <a href="{% url 'main:show_main' %}#profile" class="back-top">Kembali ke atas</a>
-        </div>
-    </footer>
 
     <script src="{% static 'js/theme.js' %}"></script>
 </body>
