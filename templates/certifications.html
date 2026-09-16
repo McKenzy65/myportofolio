@@ -14,6 +14,14 @@
                 <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
             </div>
 
+            <form method="get" action="{% url 'main:show_certifications' %}" class="cert-search">
+    <input type="search"
+           name="title"
+           value="{{ title_query }}"
+           placeholder="Cari berdasarkan judul sertifikasi"
+           aria-label="Cari berdasarkan judul sertifikasi">
+    <button type="submit" class="button">Cari</button>
+</form>
             <div class="cert-grid">
                 {% for cert in certification_list %}
                 <article class="cert{% if cert.is_highlight %} cert--highlight{% endif %}">

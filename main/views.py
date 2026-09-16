@@ -61,3 +61,19 @@ def get_certifications_json(request):
 
     certifications_json = serializers.serialize("json", certifications)
     return HttpResponse(certifications_json, content_type="application/json")
+
+def show_certifications(request):
+    json_response = get_certifications_json(request)
+    certifications = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    certifications = [cert.object for cert in certifications]
+    title_query = request.GET.get("title", "").strip()
+
+    context = {
+        "name": PORTFOLIO_OWNER,
+        "certification_list": certifications,
+        "title_query": title_query,
+    }
+    return render(request, "certifications.html", context)

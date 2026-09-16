@@ -1115,3 +1115,61 @@ ul, ol {
     cursor: pointer;
     font: inherit;
 }
+
+
+.button {
+    display: inline-block;
+    border: 0;
+    border-radius: 6px;
+    padding: 0.6rem 1.2rem;
+    background: var(--accent, #6d4aff);
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.button:hover {
+    opacity: 0.9;
+}
+
+.cert-search {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.cert-search input {
+    flex: 1;
+    padding: 0.6rem;
+    border: 1px solid var(--line, #ddd);
+    border-radius: 6px;
+    font: inherit;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem;
+    border: 1px solid var(--line, #ddd);
+    border-radius: 6px;
+    font: inherit;
+}
+
+.form-error {
+    color: #b42318;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+}
