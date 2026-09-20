@@ -19,15 +19,6 @@ def show_main(request):
     }
     return render(request, "index.html", context)
 
-def show_certifications(request):
-    certification_list = Certification.objects.all()
-
-    context = {
-        'name': PORTFOLIO_OWNER,
-        'certification_list': certification_list,
-    }
-    return render(request, "certifications.html", context)
-
 def create_certification(request):
     form = CertificationForm(request.POST or None)
 
