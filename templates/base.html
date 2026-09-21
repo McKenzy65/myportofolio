@@ -38,6 +38,13 @@
             </div>
         </div>
     </header>
+    {% if messages %}
+    <div class="container messages" role="status" aria-live="polite">
+        {% for message in messages %}
+        <p class="message message--{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% block content %}{% endblock content %}
     <footer class="site-footer">
         <div class="container footer-grid">
