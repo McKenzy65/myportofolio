@@ -632,6 +632,18 @@ ul, ol {
     background: linear-gradient(to top, var(--bg-raised), transparent 60%);
 }
 
+.project-thumb--photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--focus, center);
+}
+
+.project-thumb--photo::after {
+    background: linear-gradient(to top, var(--bg-raised), transparent 25%);
+}
+
 .project-thumb--1 {
     background-image:
         radial-gradient(circle at 20% 30%, rgba(180, 107, 255, 0.6), transparent 40%),

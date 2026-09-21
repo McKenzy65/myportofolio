@@ -145,7 +145,9 @@
 
                 <div class="project-grid">
                     <article class="project" data-cat="python">
-                        <div class="project-thumb project-thumb--1" aria-hidden="true"></div>
+                        <div class="project-thumb project-thumb--photo">
+                            <img src="{% static 'img/dione-samsung.jpg' %}" alt="Tim Dione AI di pengumuman pemenang Samsung Solve for Tomorrow 2024" style="--focus: 50% 60%" loading="lazy">
+                        </div>
                         <div class="project-info">
                             <h3>Dione AI ,  AI-Powered Learning System</h3>
                             <p>Berperan sebagai project lead untuk platform edukasi berbasis AI dan IoT menggunakan Arduino, mencakup absensi wajah, kontrol suara, hingga ringkasan materi otomatis. Meraih Juara 2 Samsung Solve for Tomorrow Indonesia 2024.</p>
@@ -156,15 +158,17 @@
                         </div>
                     </article>
 
-                    <article class="project" data-cat="web">
-                        <div class="project-thumb project-thumb--2" aria-hidden="true"></div>
+                    <article class="project" data-cat="python">
+                        <div class="project-thumb project-thumb--photo">
+                            <img src="{% static 'img/dione-psn.webp' %}" alt="Uji coba fitur absensi wajah Dione AI" loading="lazy">
+                        </div>
                         <div class="project-info">
-                            <h3>Portofolio pribadi</h3>
-                            <p>Halaman yang sedang kamu lihat ini, dibangun dengan HTML5 dan CSS3 murni di atas Django, termasuk filter proyek di atas yang tidak menggunakan JavaScript sama sekali.</p>
+                            <h3>Dione AI, Pesta Sains Nasional IPB</h3>
+                            <p>Membawa Dione AI sebagai finalis STEM Young Researcher Award di Pesta Sains Nasional, IPB University (2024). Salah satu fitur utamanya adalah absensi berbasis pengenalan wajah.</p>
                             <ul class="project-tags">
-                                <li>HTML</li><li>CSS</li><li>Django</li>
+                                <li>AI</li><li>IoT</li><li>Arduino</li>
                             </ul>
-                            <a class="project-link" href="https://github.com/">Lihat kode</a>
+                            <a class="project-link" href="{% url 'main:show_certifications' %}">Lihat sertifikasi</a>
                         </div>
                     </article>
 
@@ -181,7 +185,9 @@
                     </article>
 
                     <article class="project" data-cat="design">
-                        <div class="project-thumb project-thumb--3" aria-hidden="true"></div>
+                        <div class="project-thumb project-thumb--photo">
+                            <img src="{% static 'img/infinite-learning.webp' %}" alt="Tampilan scene game Infinite Learning di Unity" loading="lazy">
+                        </div>
                         <div class="project-info">
                             <h3>Game project ,  Infinite Learning</h3>
                             <p>Turut mengembangkan game dalam program Infinite Learning, menangani gameplay programming dengan C# dan berkolaborasi dengan tim melalui Git.</p>
