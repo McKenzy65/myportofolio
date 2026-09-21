@@ -81,6 +81,27 @@ Masalah yang paling lama diselesaikan adalah membuat GIF latar menyatu dengan wa
 
 `migrate` memigrasi berkas2 tersebut secara berurutan utk make sure menerapkan perubahan tersebut (skema tabel, maupun perubahan data dari `RunPython`) ke database yg sedang dipakai, contoh pada tugas ini: menambahkan model `Certification` mengharuskan `makemigrations` dijalankan lebih dulu utk menghasilkan `0002_certification.py`, lalu `migrate` dijalankan supaya tabel `main_certification` benar2 dibuat di `db.sqlite3`. contoh lain, migrasi data `0003_populate_certifications.py` yang memindahkan 6 sertifikasi hard coded ke database juga baru benar2 mengisi datanya setelah `migrate` dijalankan
 
+______________________________________________________________________________________________________________
+### Tugas 3
+
+yang dikerjakan:
+
+1. membuat template dasar `templates/base.html` (head, navbar, footer, `{% block meta %}` dan `{% block content %}`), terus me refactor `index.html`, `certifications.html`, `certification_form.html` agar memakai `{% extends 'base.html' %}` sehingga tdk ada kode header/footer yg berulang
+2. membuat `CertificationForm` (`ModelForm`) di `main/forms.py` dgn empat field: `title` (CharField), `description` (TextField), `year` (PositiveIntegerField), dan `is_highlight` (BooleanField)
+3. membuat view `create_certification` (form tambah data), `edit_certification` (form ubah data memakai `instance=`), `delete_certification` (hapus data dari POST), disertai dgn named route masing2
+4. membuat view `get_certifications_json` yg meng return data sertifikasi dalam format JSON (`/api/certifications/`) dan mendukung filter `?title=`
+5. mengubah `show_certifications` agar mengambil data melalui `get_certifications_json`, meng deserialisasi, lalu menampilkannya di template, ditambah kotak pencarian based on judul
+6. membuat UI: halaman form tambah/ubah (`certification_form.html` dipake bersama), tombol "Tambah Sertifikasi", tombol "Edit", tombol "Hapus" dengan modal konfirmasi (`components/certification_delete_modal.html`) berbasis atribut `popover`
+7. menambahkan `CSRF_TRUSTED_ORIGINS` untuk domain PWS di `settings.py`
+
+Pertanyaan reflektif
+
+1. `ModelForm` dipake karna django membuat field form, label, tipe input, dan validasi langsung dari definisi model. Kalau membuat form HTML manual, setiap field harus ditulis ulang dan validasinya (misalnya `year` harus angka, `title` maksimal 255 karakter) harus dibuat sendiri, sehingga mudah tidak sinkron ketika model berubah. Dengan `ModelForm`, `form.is_valid()` memvalidasi input, `form.save()` menyimpan ke database, dan `instance=` membuat form yang sama bisa dipakai untuk mengubah data yang sudah ada. `{% csrf_token %}` diwajibkan karena form POST rentan terhadap serangan CSRF (Cross-Site Request Forgery), yaitu situs lain yang diam-diam membuat browser pengguna yang sedang login mengirim request ke server kita. Django membuat token rahasia yang unik per sesi dan menyisipkannya ke form, lalu server mencocokkannya saat request masuk. Request tanpa token yang cocok ditolak (403), sehingga hanya form yang benar-benar berasal dari halaman kita yang diterima.
+
+2. JSON lebih disukai karena lebih ringkas: XML mengulang nama tag pembuka dan penutup untuk setiap elemen sehingga ukurannya lebih besar, sedangkan JSON hanya memakai pasangan key-value dan array. JSON juga lebih cepat di-parse dan cocok langsung dengan struktur data di kebanyakan bahasa (objek/dictionary dan list), termasuk JavaScript di sisi frontend yang bisa memakainya lewat `JSON.parse` atau `fetch()` tanpa parser tambahan. JSON punya tipe data dasar (string, number, boolean, null), dan tetap mudah dibaca manusia. XML masih dipakai pada sistem lama dan enterprise, tetapi untuk REST API modern JSON menjadi pilihan utama.
+
+3. Saat browser membuka `/api/certifications/`, request diterima `portofolio/urls.py`, diteruskan lewat `include('main.urls')` ke `main/urls.py`, lalu dicocokkan ke `get_certifications_json`. View membaca parameter `title` dari `request.GET`, mengambil data lewat `Certification.objects.all()` (difilter dengan `title__icontains` jika ada query), lalu memanggil `serializers.serialize("json", certifications)` dan mengembalikannya dengan `HttpResponse(..., content_type="application/json")`. Serialization diperlukan karena `QuerySet` dan objek model adalah objek Python di memori, sedangkan HTTP hanya mengirim teks/byte. Objek itu harus diubah dulu ke format teks standar (JSON) yang berisi `model`, `pk`, dan `fields` agar bisa dikirim dan dibaca oleh client atau sistem lain. Di `show_certifications`, hasil JSON tersebut dideserialisasi kembali (`serializers.deserialize`) menjadi objek Python untuk dirender oleh template.
+
 ---
 
 ## AI Disclosure
@@ -123,5 +144,28 @@ Perbaikan serta verifikasi manual yang saya lakukan
 5. meninjau ulang (me-make sure) isi migrasi data agar 6 sertifikasi yg dipindah sama persis dengan yg sebelumnya ada di `index.html`
 
 Keterbatasan AI yang saya temui: AI perlu diarahkan untuk memperbaiki satu unit test yang gagal karena migrasi data mengisi database test dengan data awal, sehingga kondisi "kosong" harus dites dengan menghapus data lebih dulu
+
+### Tugas 3
+
+Tools yang dipakai: Claude Code (Claude Sonnet 5, Anthropic).
+
+Bagian yang dibantu AI
+
+1. Penjelasan materi Tutorial 03 (skeleton template, `ModelForm`, CSRF, serialize/deserialize JSON) dalam bahasa yang lebih mudah dipahami
+2. Pemecahan Tutorial 03 dan Tugas 3 menjadi beberapa langkah/commit, beserta contoh kode yang disesuaikan ke model `Certification` (`base.html`, `forms.py`, view create/edit/delete/JSON, template form, modal hapus, dan CSS pendukung)
+3. Pengecekan kode saya terhadap PDF tutorial dan checklist tugas, serta penambahan fitur update, tombol tambah/edit, dan CSS terkait pada tahap akhir
+4. Draf awal jawaban pertanyaan reflektif Tugas 3 di atas
+
+Strategi prompting: saya memberikan PDF Tutorial 03 dan Tugas 3, meminta AI menjelaskan materi terlebih dahulu, lalu meminta panduan per commit (saya yang mengetik, menjalankan, dan melakukan commit sendiri). Setiap langkah saya minta dicek ulang terhadap PDF, dan saya meminta AI membaca file proyek untuk memverifikasi hasil edit saya.
+
+Perbaikan serta verifikasi manual yang saya lakukan
+
+1. mengetik dan menyesuaikan kode ke struktur proyek saya sendiri, termasuk view `edit_certification` dan routing-nya
+2. menjalankan `python manage.py runserver` dan mencoba fitur tambah, ubah, hapus, pencarian, dan endpoint `/api/certifications/` langsung di browser
+3. memperbaiki error yang muncul sendiri: `ModuleNotFoundError: dotenv` karena venv belum aktif, `TemplateSyntaxError` karena sisa `<!DOCTYPE>` sebelum `{% extends %}`, folder `components/` yang salah letak, import yang belum ditambahkan di `main/urls.py`, variabel `Certification` yang menimpa nama model di `delete_certification`, dan CSS yang tertahan cache browser
+4. me-refactor `index.html` agar memakai `base.html`, menghapus fungsi `show_certifications` yang terduplikasi, dan meninjau ulang agar struktur kode mengikuti PDF
+5. melakukan commit secara bertahap dengan pesan yang deskriptif
+
+Keterbatasan AI yang saya temui: instruksi AI sempat tidak sinkron dengan PDF (misalnya struktur modal hapus yang keliru pada percobaan pertama) dan beberapa langkah tidak menyebutkan detail yang membuat error, seperti `{% load static %}` yang harus ditulis ulang di template turunan. AI juga tidak bisa menjalankan klik/submit form di browser saya, sehingga pengujian alur tambah, ubah, hapus tetap saya lakukan sendiri.
 
 
