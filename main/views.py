@@ -60,15 +60,32 @@ def delete_certification(request, certification_id):
 
     return redirect("main:show_certifications")
 
+def json_response(queryset):
+    """Serialisasi queryset model Django ke response JSON."""
+    return HttpResponse(
+        serializers.serialize("json", queryset),
+        content_type="application/json",
+    )
+
 def get_certifications_json(request):
+    """Data sertifikasi dalam JSON. Mendukung filter judul lewat ?title=."""
     title_query = request.GET.get("title", "").strip()
     certifications = Certification.objects.all()
 
     if title_query:
         certifications = certifications.filter(title__icontains=title_query)
 
-    certifications_json = serializers.serialize("json", certifications)
-    return HttpResponse(certifications_json, content_type="application/json")
+    return json_response(certifications)
+
+def get_experiences_json(request):
+    """Data pengalaman dalam JSON. Mendukung filter kategori lewat ?category=."""
+    category_query = request.GET.get("category", "").strip()
+    experiences = Experience.objects.all()
+
+    if category_query:
+        experiences = experiences.filter(category=category_query)
+
+    return json_response(experiences)
 
 def show_certifications(request):
     json_response = get_certifications_json(request)
