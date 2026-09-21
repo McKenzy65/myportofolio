@@ -39,8 +39,8 @@
     --line: rgba(180, 107, 255, 0.2);
     --line-strong: rgba(180, 107, 255, 0.45);
 
-    --font-display: "Space Grotesk", -apple-system, "Segoe UI", sans-serif;
-    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-display: "Poppins", -apple-system, "Segoe UI", sans-serif;
+    --font-body: "Poppins", -apple-system, "Segoe UI", Roboto, sans-serif;
 
     --radius: 4px;
     --radius-lg: 10px;
