@@ -154,7 +154,6 @@ Bagian yang dibantu AI
 1. Penjelasan materi Tutorial 03 (skeleton template, `ModelForm`, CSRF, serialize/deserialize JSON) dalam bahasa yang lebih mudah dipahami
 2. Pemecahan Tutorial 03 dan Tugas 3 menjadi beberapa langkah/commit, beserta contoh kode yang disesuaikan ke model `Certification` (`base.html`, `forms.py`, view create/edit/delete/JSON, template form, modal hapus, dan CSS pendukung)
 3. Pengecekan kode saya terhadap PDF tutorial dan checklist tugas, serta penambahan fitur update, tombol tambah/edit, dan CSS terkait pada tahap akhir
-4. Draf awal jawaban pertanyaan reflektif Tugas 3 di atas
 
 Strategi prompting: saya memberikan PDF Tutorial 03 dan Tugas 3, meminta AI menjelaskan materi terlebih dahulu, lalu meminta panduan per commit (saya yang mengetik, menjalankan, dan melakukan commit sendiri). Setiap langkah saya minta dicek ulang terhadap PDF, dan saya meminta AI membaca file proyek untuk memverifikasi hasil edit saya.
 
