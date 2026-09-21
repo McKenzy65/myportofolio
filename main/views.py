@@ -30,6 +30,23 @@ def create_certification(request):
     context = {
         "name": PORTFOLIO_OWNER,
         "form": form,
+        "page_title": "Tambah Sertifikasi Baru",
+    }
+    return render(request, "certification_form.html", context)
+
+def edit_certification(request, certification_id):
+    certification = get_object_or_404(Certification, pk=certification_id)
+    form = CertificationForm(request.POST or None, instance=certification)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Sertifikasi berhasil diperbarui!")
+        return redirect("main:show_certifications")
+
+    context = {
+        "name": PORTFOLIO_OWNER,
+        "form": form,
+        "page_title": "Edit Sertifikasi",
     }
     return render(request, "certification_form.html", context)
 

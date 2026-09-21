@@ -14,21 +14,29 @@
                 <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
             </div>
 
+            <p class="cert-add">
+                <a href="{% url 'main:create_certification' %}" class="button">+ Tambah Sertifikasi</a>
+            </p>
+
             <form method="get" action="{% url 'main:show_certifications' %}" class="cert-search">
-    <input type="search"
-           name="title"
-           value="{{ title_query }}"
-           placeholder="Cari berdasarkan judul sertifikasi"
-           aria-label="Cari berdasarkan judul sertifikasi">
-    <button type="submit" class="button">Cari</button>
-</form>
+                <input type="search"
+                       name="title"
+                       value="{{ title_query }}"
+                       placeholder="Cari berdasarkan judul sertifikasi"
+                       aria-label="Cari berdasarkan judul sertifikasi">
+                <button type="submit" class="button">Cari</button>
+            </form>
+
             <div class="cert-grid">
                 {% for cert in certification_list %}
                 <article class="cert{% if cert.is_highlight %} cert--highlight{% endif %}">
                     <span class="cert-year">{{ cert.year }}</span>
                     <h3>{{ cert.title }}</h3>
                     <p>{{ cert.description }}</p>
-                    {% include "components/certification_delete_modal.html" with cert=cert %}
+                    <div class="cert-actions">
+                        <a href="{% url 'main:edit_certification' cert.id %}" class="button button-secondary">Edit</a>
+                        {% include "components/certification_delete_modal.html" with cert=cert %}
+                    </div>
                 </article>
                 {% empty %}
                 <p>Belum ada data sertifikasi di database.</p>

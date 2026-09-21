@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
 {% block meta %}
-<title>Tambah Sertifikasi - {{ name }}</title>
+<title>{{ page_title }} - {{ name }}</title>
 {% endblock meta %}
 
 {% block content %}
 <main>
     <section class="section certs">
         <div class="container">
-            <h1>Tambah Sertifikasi Baru</h1>
-            <form method="post" action="{% url 'main:create_certification' %}">
+            <h1>{{ page_title }}</h1>
+            <form method="post">
                 {% csrf_token %}
                 {% for field in form %}
                 <div class="form-group">

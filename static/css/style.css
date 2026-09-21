@@ -1173,3 +1173,17 @@ ul, ol {
     font-size: 0.85rem;
     margin-top: 0.35rem;
 }
+.cert-add {
+    margin-bottom: 1rem;
+}
+
+.cert-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.cert-actions .cert-status {
+    margin: 0;
+}
