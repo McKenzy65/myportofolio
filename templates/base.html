@@ -30,14 +30,19 @@
                     <a href="{% url 'main:show_main' %}#projects">Proyek</a>
                     <a href="{% url 'main:show_main' %}#experience">Pengalaman</a>
                     <a href="{% url 'main:show_certifications' %}">Sertifikasi</a>
-                    {% if user.is_authenticated %}
-    <span class="nav-user">{{ user.username }}</span>
-    <a href="{% url 'main:logout' %}">Logout</a>
-{% else %}
-    <a href="{% url 'main:login' %}">Login</a>
-    <a href="{% url 'main:register' %}">Register</a>
-{% endif %}
                 </nav>
+                <div class="nav-auth">
+                    {% if user.is_authenticated %}
+                    <span class="nav-user">
+                        <span class="nav-user-dot" aria-hidden="true"></span>
+                        {{ user.username }}
+                    </span>
+                    <a href="{% url 'main:logout' %}" class="nav-auth-link">Logout</a>
+                    {% else %}
+                    <a href="{% url 'main:login' %}" class="nav-auth-link">Login</a>
+                    <a href="{% url 'main:register' %}" class="nav-auth-link nav-auth-link--accent">Register</a>
+                    {% endif %}
+                </div>
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Ganti ke mode terang">
                     <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"/></svg>
                     <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a1 1 0 0 1-1-1V2a1 1 0 1 1 2 0v1.5a1 1 0 0 1-1 1Zm0 15a1 1 0 0 1 1 1V22a1 1 0 1 1-2 0v-1.5a1 1 0 0 1 1-1ZM4.5 12a1 1 0 0 1-1 1H2a1 1 0 1 1 0-2h1.5a1 1 0 0 1 1 1Zm15 0a1 1 0 0 1 1-1H22a1 1 0 1 1 0 2h-1.5a1 1 0 0 1-1-1ZM6.34 7.76a1 1 0 0 1-1.41 0L3.87 6.7a1 1 0 1 1 1.41-1.41L6.34 6.34a1 1 0 0 1 0 1.42Zm12.02 12.02a1 1 0 0 1-1.41 0l-1.06-1.06a1 1 0 1 1 1.41-1.41l1.06 1.06a1 1 0 0 1 0 1.41ZM6.34 16.24a1 1 0 0 1 0 1.42l-1.06 1.06a1 1 0 1 1-1.41-1.41l1.06-1.06a1 1 0 0 1 1.41 0Zm12.02-12.02a1 1 0 0 1 0 1.41l-1.06 1.06a1 1 0 1 1-1.41-1.41l1.06-1.06a1 1 0 0 1 1.41 0ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z"/></svg>
