@@ -135,6 +135,20 @@ Pertanyaan reflektif
 
 3. Saat browser membuka `/api/certifications/`, request diterima `portofolio/urls.py`, diteruskan lewat `include('main.urls')` ke `main/urls.py`, lalu dicocokkan ke `get_certifications_json`. View membaca parameter `title` dari `request.GET`, mengambil data lewat `Certification.objects.all()` (difilter dengan `title__icontains` jika ada query), lalu memanggil `serializers.serialize("json", certifications)` dan mengembalikannya dengan `HttpResponse(..., content_type="application/json")`. Serialization diperlukan karena `QuerySet` dan objek model adalah objek Python di memori, sedangkan HTTP hanya mengirim teks/byte. Objek itu harus diubah dulu ke format teks standar (JSON) yang berisi `model`, `pk`, dan `fields` agar bisa dikirim dan dibaca oleh client atau sistem lain. Di `show_certifications`, hasil JSON tersebut dideserialisasi kembali (`serializers.deserialize`) menjadi objek Python untuk dirender oleh template.
 
+### Tugas 4
+
+yang dikerjakan:
+
+1. menambahkan autentikasi bawaan Django: `register` (`UserCreationForm`), `login_user` (`AuthenticationForm`), `logout_user`, beserta halaman `register.html` dan `login.html`serta status login di navbar (`base.html`)
+2. menambahkan cookie `last_login` yang di-set saat login, diread di `show_main` dan ditampilkan di `index.html`, serta dihapus saat logout
+3. mengunci `create_certification` dan `delete_certification` dengan `@login_required` dan pengecekan `request.user.is_superuser`, sehingga hanya pemilik portofolio yang bisa menambah/menghapus data
+4. menambahkan peran **Editor** lewat Django Group: `edit_certification` mengizinkan superuser atau anggota grup "Editor" (dicek dengan `request.user.groups.filter(name="Editor").exists()`), sedangkan create dan delete tetap khusus superuser
+5. menambahkan `ManyToManyField starred_by` pada model `Certification`, view `toggle_star` (maksimal satu star per pengguna, POST dan `{% csrf_token %}`), serta komponen `certification_star.html` yang menampilkan jumlah star dan status pengguna
+6. menyembunyikan tombol Tambah/Edit/Hapus di `certifications.html` sesuai peran (`{% if user.is_superuser %}`, `{% if user.is_superuser or is_editor %}`)
+7. menambahkan `use_natural_foreign_keys=True` pada `get_certifications_json` supaya `starred_by` menampilkan username, bukan id pengguna
+8. menambahkan 8 unit test baru untuk 4 peran (pengunjung, user biasa, editor, superuser), total 30 unit test
+9. menambahkan skrip pengujian end-to-end dengan Selenium (`test_e2e.py`, bagian opsional Tutorial 04) untuk memverifikasi alur login, cookie, dan otorisasi lewat browser automate
+
 ---
 
 ## AI Disclosure
@@ -201,5 +215,26 @@ Perbaikan serta verifikasi manual yang saya lakukan
 5. melakukan commit secara bertahap dengan pesan yang deskriptif
 
 Keterbatasan AI yang saya temui: instruksi AI sempat tidak sinkron dengan PDF (misalnya struktur modal hapus yang keliru pada percobaan pertama) dan beberapa langkah tidak menyebutkan detail yang membuat error, seperti `{% load static %}` yang harus ditulis ulang di template turunan. AI juga tidak bisa menjalankan klik/submit form di browser saya, sehingga pengujian alur tambah, ubah, hapus tetap saya lakukan sendiri. Unit test buatan AI hanya memeriksa HTML dan data di sisi server, bukan tampilan visual (misalnya flash message, foto kartu proyek, dan border foto profil), jadi hal tersebut tetap saya periksa langsung di browser. Isi teks kartu proyek yang ditulis AI juga saya verifikasi terhadap data saya sendiri, karena AI tidak mengetahui detail proyek saya di luar yang ada di repositori.
+
+### Tugas 4
+
+Tools yang dipakai: Claude Code (Claude Sonnet 5, Anthropic).
+
+Bagian yang dibantu AI
+
+1. Penjelasan materi Tutorial 04 (autentikasi bawaan Django, session, cookie, CSRF, otorisasi berbasis peran) sebelum saya mengimplementasikan sendiri
+2. Panduan tiap langkah Tutorial 04, disesuaikan ke model `Certification` milik saya (bukan `Project` seperti contoh PDF): `register`/`login_user`/`logout_user`, cookie `last_login`, `@login_required` dan cek `is_superuser` pada `create_certification`/`edit_certification`/`delete_certification`, `ManyToManyField starred_by`, view `toggle_star`
+
+Strategi prompting: saya memberikan PDF Tutorial 04 dan Tugas 4, meminta AI menjelaskan materi dulu, lalu meminta AI membaca ulang kode saya untuk mengecek bug sebelum saya commit.
+
+Perbaikan serta verifikasi manual yang saya lakukan
+
+1. menjalankan `python manage.py migrate` dan `python manage.py runserver`, lalu mencoba sendiri alur register, login, logout, dan status navbar di browser
+2. membuat grup "Editor" secara manual lewat Django Admin dan memasukkan akun uji ke dalamnya, karena ini langkah yang tidak bisa dilakukan lewat kode
+3. menjalankan `python manage.py test` untuk memastikan seluruh 30 unit test lulus, termasuk 8 test otorisasi peran yang baru
+4. menyelesaikan konflik `git rebase` secara manual saat menyatukan commit lokal dengan perubahan yang saya buat langsung lewat GitHub web editor
+5. mengecek langsung endpoint `/api/certifications/` di browser untuk memastikan `starred_by` tidak membocorkan id pengguna
+
+Keterbatasan AI yang saya temui: AI sempat menandai `edit_certification` tanpa proteksi sama sekali dan `get_certifications_json` yang menghitung `use_natural_foreign_keys` tapi tidak memakainya, keduanya bug yang lolos dari saya sendiri karena saya mengetik terburu-buru mengejar tenggat waktu. AI juga tidak bisa menjalankan Burp Suite (bagian opsional Tutorial 04) karena itu aplikasi desktop terpisah yang perlu diinstal dan dioperasikan manual, jadi bagian itu saya lewati dan cukup memahami konsepnya dari penjelasan AI.
 
 
