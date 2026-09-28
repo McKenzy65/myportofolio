@@ -15,6 +15,7 @@ PORTFOLIO_OWNER = 'Umar Faiz Rahman'
 
 @login_required(login_url="/login/")
 def toggle_star(request, certification_id):
+    """Pengguna login memberi/membatalkan star (maksimal satu per pengguna)."""
     certification = get_object_or_404(Certification, pk=certification_id)
     if request.method == "POST":
         if request.user in certification.starred_by.all():
@@ -76,6 +77,7 @@ def show_main(request):
 
 @login_required(login_url="/login/")
 def create_certification(request):
+    """Hanya pemilik portofolio (superuser) yang boleh menambah data."""
     if not request.user.is_superuser:
         raise PermissionDenied
     form = CertificationForm(request.POST or None)
@@ -94,7 +96,9 @@ def create_certification(request):
 
 @login_required(login_url="/login/")
 def edit_certification(request, certification_id):
-    if not request.user.is_superuser:
+    """Superuser atau anggota grup Editor boleh mengubah data yang sudah ada."""
+    is_editor = request.user.groups.filter(name="Editor").exists()
+    if not (request.user.is_superuser or is_editor):
         raise PermissionDenied
     certification = get_object_or_404(Certification, pk=certification_id)
     form = CertificationForm(request.POST or None, instance=certification)
@@ -113,6 +117,7 @@ def edit_certification(request, certification_id):
 
 @login_required(login_url="/login/")
 def delete_certification(request, certification_id):
+    """Hanya pemilik portofolio (superuser) yang boleh menghapus data."""
     if not request.user.is_superuser:
         raise PermissionDenied
     certification = get_object_or_404(Certification, pk=certification_id)
@@ -163,9 +168,15 @@ def show_certifications(request):
     certifications = [cert.object for cert in certifications]
     title_query = request.GET.get("title", "").strip()
 
+    is_editor = (
+        request.user.is_authenticated
+        and request.user.groups.filter(name="Editor").exists()
+    )
+
     context = {
         "name": PORTFOLIO_OWNER,
         "certification_list": certifications,
         "title_query": title_query,
+        "is_editor": is_editor,
     }
     return render(request, "certifications.html", context)

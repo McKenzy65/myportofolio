@@ -36,10 +36,12 @@
                     <h3>{{ cert.title }}</h3>
                     <p>{{ cert.description }}</p>
                     {% include "components/certification_star.html" with cert=cert %}
-                    {% if user.is_superuser %}
+                    {% if user.is_superuser or is_editor %}
                     <div class="cert-actions">
                         <a href="{% url 'main:edit_certification' cert.id %}" class="button button-secondary">Edit</a>
+                        {% if user.is_superuser %}
                         {% include "components/certification_delete_modal.html" with cert=cert %}
+                        {% endif %}
                     </div>
                     {% endif %}
                 </article>

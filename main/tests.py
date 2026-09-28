@@ -183,3 +183,105 @@ class JsonDeliveryTest(TestCase):
         data = json.loads(filtered.content)
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["fields"]["title"], "Riset AI")
+
+
+class RoleAuthorizationTest(TestCase):
+    """Hak akses 4 peran: pengunjung, user biasa, editor, superuser."""
+
+    def setUp(self):
+        Certification.objects.all().delete()
+        self.cert = Certification.objects.create(
+            title="IELTS", description="British Council.", year=2024
+        )
+
+        from django.contrib.auth.models import Group
+
+        self.editor_group, _ = Group.objects.get_or_create(name="Editor")
+
+        self.regular_user = User.objects.create_user(
+            username="regular_test", password="testpass123"
+        )
+        self.editor_user = User.objects.create_user(
+            username="editor_test", password="testpass123"
+        )
+        self.editor_user.groups.add(self.editor_group)
+        self.superuser = User.objects.create_superuser(
+            username="owner_test", password="testpass123"
+        )
+
+    def test_anonymous_redirected_to_login_on_create(self):
+        response = self.client.get(reverse("main:create_certification"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_regular_user_forbidden_from_create(self):
+        self.client.login(username="regular_test", password="testpass123")
+        response = self.client.get(reverse("main:create_certification"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_regular_user_forbidden_from_edit(self):
+        self.client.login(username="regular_test", password="testpass123")
+        response = self.client.get(
+            reverse("main:edit_certification", args=[self.cert.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_regular_user_forbidden_from_delete(self):
+        self.client.login(username="regular_test", password="testpass123")
+        response = self.client.post(
+            reverse("main:delete_certification", args=[self.cert.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_regular_user_can_toggle_star(self):
+        self.client.login(username="regular_test", password="testpass123")
+        response = self.client.post(
+            reverse("main:toggle_star", args=[self.cert.pk])
+        )
+        self.assertRedirects(response, reverse("main:show_certifications"))
+        self.assertIn(self.regular_user, self.cert.starred_by.all())
+
+        # toggle lagi: star dibatalkan, tidak boleh dobel
+        self.client.post(reverse("main:toggle_star", args=[self.cert.pk]))
+        self.assertNotIn(self.regular_user, self.cert.starred_by.all())
+
+    def test_editor_can_edit_but_not_create_or_delete(self):
+        self.client.login(username="editor_test", password="testpass123")
+
+        edit_response = self.client.post(
+            reverse("main:edit_certification", args=[self.cert.pk]),
+            {"title": "IELTS Academic", "description": "British Council.", "year": 2025},
+        )
+        self.assertRedirects(edit_response, reverse("main:show_certifications"))
+        self.cert.refresh_from_db()
+        self.assertEqual(self.cert.title, "IELTS Academic")
+
+        create_response = self.client.get(reverse("main:create_certification"))
+        self.assertEqual(create_response.status_code, 403)
+
+        delete_response = self.client.post(
+            reverse("main:delete_certification", args=[self.cert.pk])
+        )
+        self.assertEqual(delete_response.status_code, 403)
+
+    def test_superuser_can_create_edit_and_delete(self):
+        self.client.login(username="owner_test", password="testpass123")
+
+        create_response = self.client.post(
+            reverse("main:create_certification"),
+            {"title": "New Cert", "description": "Desc.", "year": 2026},
+        )
+        self.assertRedirects(create_response, reverse("main:show_certifications"))
+
+        delete_response = self.client.post(
+            reverse("main:delete_certification", args=[self.cert.pk])
+        )
+        self.assertRedirects(delete_response, reverse("main:show_certifications"))
+        self.assertFalse(Certification.objects.filter(pk=self.cert.pk).exists())
+
+    def test_json_endpoint_does_not_leak_user_id(self):
+        self.cert.starred_by.add(self.regular_user)
+        response = self.client.get(reverse("main:get_certifications_json"))
+        data = json.loads(response.content)
+        starred = next(c["fields"]["starred_by"] for c in data if c["pk"] == self.cert.pk)
+        self.assertEqual(starred, [["regular_test"]])
