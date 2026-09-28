@@ -1,7 +1,7 @@
 # Portofolio ,  Umar Faiz Rahman
 
 Website portofolio pribadi untuk mata kuliah Pemrograman Berbasis Platform (PBP), Fasilkom UI.
-Saat ini halaman masih murni HTML5 + CSS3 yang disajikan lewat proyek Django.
+Saat ini halaman masih murni HTML5 + CSS3 + JS yang disajikan lewat proyek Django.
 
 **Bagian halaman**
 
