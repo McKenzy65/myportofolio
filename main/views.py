@@ -7,8 +7,22 @@ from django.core import serializers
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import redirect, render
+import datetime
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied        
 
 PORTFOLIO_OWNER = 'Umar Faiz Rahman'
+
+@login_required(login_url="/login/")
+def toggle_star(request, certification_id):
+    certification = get_object_or_404(Certification, pk=certification_id)
+    if request.method == "POST":
+        if request.user in certification.starred_by.all():
+            certification.starred_by.remove(request.user)
+        else:
+            certification.starred_by.add(request.user)
+    return redirect("main:show_certifications")
+
 
 def register(request):
     form = UserCreationForm(request.POST or None)
@@ -19,7 +33,7 @@ def register(request):
         return redirect("main:login")
 
     context = {
-        "name": "Burhan",
+        "name": PORTFOLIO_OWNER,
         "form": form,
     }
     return render(request, "register.html", context)
@@ -28,33 +42,42 @@ def login_user(request):
     form = AuthenticationForm(request, data=request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-        login(request, form.get_user())
-        return redirect("main:show_main")
+        user = form.get_user()
+        login(request, user)
+        response = redirect("main:show_main")
+        response.set_cookie('last_login', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        return response
 
     context = {
-        "name": "Burhan",
+        "name": PORTFOLIO_OWNER,
         "form": form,
     }
     return render(request, "login.html", context)
 
 def logout_user(request):
     logout(request)
-    return redirect("main:show_main")
-
+    response = redirect("main:show_main")
+    response.delete_cookie('last_login')
+    return response
 
 def show_main(request):
-    experience_list = Experience.objects.all()
-
+    last_login = request.COOKIES.get('last_login', 'Belum ada sesi login / Cookie tidak ditemukan')
     context = {
-        'name': PORTFOLIO_OWNER,
-        'npm': '2506616711',
-        'study_program': 'S1 Sistem Informasi',
-        'bio': 'Mahasiswa Sistem Informasi Universitas Indonesia',
-        'experience_list': experience_list,
+        "name": PORTFOLIO_OWNER,
+        "npm": "2506616711",
+        "study_program": "S1 Sistem Informasi",
+        "bio": (
+            "Mahasiswa Ilmu Komputer Universitas Indonesia yang sedang belajar "
+            "pada pengembangan perangkat lunak dan pendidikan."
+        ),
+        "last_login": last_login,
     }
     return render(request, "index.html", context)
 
+@login_required(login_url="/login/")
 def create_certification(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
     form = CertificationForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -69,7 +92,10 @@ def create_certification(request):
     }
     return render(request, "certification_form.html", context)
 
+@login_required(login_url="/login/")
 def edit_certification(request, certification_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
     certification = get_object_or_404(Certification, pk=certification_id)
     form = CertificationForm(request.POST or None, instance=certification)
 
@@ -85,7 +111,10 @@ def edit_certification(request, certification_id):
     }
     return render(request, "certification_form.html", context)
 
+@login_required(login_url="/login/")
 def delete_certification(request, certification_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
     certification = get_object_or_404(Certification, pk=certification_id)
 
     if request.method == "POST":
@@ -110,7 +139,10 @@ def get_certifications_json(request):
     if title_query:
         certifications = certifications.filter(title__icontains=title_query)
 
-    return json_response(certifications)
+    return HttpResponse(
+        serializers.serialize("json", certifications, use_natural_foreign_keys=True),
+        content_type="application/json",
+    )
 
 def get_experiences_json(request):
     """Data pengalaman dalam JSON. Mendukung filter kategori lewat ?category=."""

@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.urls import reverse
 from main.models import Experience, Certification
@@ -62,6 +63,10 @@ class CertificationCrudTest(TestCase):
     def setUp(self):
         # migrasi data mengisi tabel dengan data awal, jadi dikosongkan dulu
         Certification.objects.all().delete()
+        self.superuser = User.objects.create_superuser(
+            username="admin_test", password="testpass123"
+        )
+        self.client.force_login(self.superuser)
         self.cert = Certification.objects.create(
             title="IELTS",
             description="British Council.",
