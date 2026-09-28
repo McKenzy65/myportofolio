@@ -1,36 +1,69 @@
-# Portofolio ,  Umar Faiz Rahman
+# Portofolio, Umar Faiz Rahman
 
 Website portofolio pribadi untuk mata kuliah Pemrograman Berbasis Platform (PBP), Fasilkom UI.
-Saat ini halaman masih murni HTML5 + CSS3 + JS yang disajikan lewat proyek Django.
+Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tutorial dan tugas.
 
-**Bagian halaman**
+- Repositori: https://github.com/McKenzy65/myportofolio
+- Situs (PWS): https://umar-faiz-myportofolio.pws.cs.ui.ac.id
 
-- About Me ,  nama, NPM, foto, bio, dan tautan sosial.
-- Skills ,  dibagi tiga kelompok (bahasa & framework, tools, sedang dipelajari) dengan indikator tingkat penguasaan.
-- Pendidikan ,  timeline vertikal.
-- Proyek ,  grid kartu proyek dengan filter kategori **tanpa JavaScript** (radio input + selector `:checked`).
-- Pengalaman ,  daftar pengalaman organisasi/kepanitiaan.
-- Penghargaan & sertifikasi
+## Fitur
+
+- **Halaman utama (`/`)**: About Me, Skills, Pendidikan, Proyek (filter kategori tanpa JavaScript), dan Pengalaman yang diambil dari database.
+- **Sertifikasi (`/certifications/`)**: data dari database dengan pencarian judul, serta tambah, ubah, dan hapus lewat form (hapus memakai modal konfirmasi berbasis atribut `popover`).
+- **Template dasar (`templates/base.html`)**: header, footer, dan kerangka HTML dipakai bersama lewat `{% extends %}`.
+- **Data delivery JSON**: data sertifikasi dan pengalaman tersedia sebagai JSON.
+- **Flash message** setelah tambah, ubah, atau hapus data, dan **mode gelap/terang** (`static/js/theme.js`).
+
+## Endpoint
+
+| URL | Method | Fungsi |
+|---|---|---|
+| `/` | GET | Halaman utama |
+| `/certifications/` | GET | Daftar sertifikasi, mendukung `?title=` |
+| `/certifications/add/` | GET, POST | Form tambah sertifikasi |
+| `/certifications/<id>/edit/` | GET, POST | Form ubah sertifikasi |
+| `/certifications/<id>/delete/` | POST | Hapus sertifikasi |
+| `/api/certifications/` | GET | Sertifikasi dalam JSON, mendukung `?title=` |
+| `/api/experiences/` | GET | Pengalaman dalam JSON, mendukung `?category=` |
+
 ## Menjalankan proyek
 
 ```bash
-git clone <url-repo-ini>
-cd <nama-folder>
+git clone https://github.com/McKenzy65/myportofolio.git
+cd myportofolio
 python -m venv env
-source env/bin/activate        
+env\Scripts\activate            # Windows. macOS/Linux: source env/bin/activate
 pip install -r requirements.txt
+python manage.py migrate
 python manage.py runserver
 ```
 
-http://localhost:8000`
+Buka http://localhost:8000. Untuk menjalankan unit test: `python manage.py test`.
 
-Struktur berkas:
+Pengembangan lokal tidak memerlukan berkas `.env`: secara bawaan `PRODUCTION=False` sehingga memakai SQLite.
+Untuk produksi (PostgreSQL) atur `PRODUCTION=True` beserta `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, dan `SCHEMA` lewat environment variable.
+
+## Struktur berkas
 
 ```
-templates/index.html
-static/css/style.css
-static/img/avatar.jpg
-static/img/bg_web.gif
+main/
+    models.py       # Experience, Certification
+    forms.py        # CertificationForm (ModelForm)
+    views.py        # view halaman, form, dan JSON
+    urls.py         # routing aplikasi (namespace "main")
+    tests.py        # unit test
+    migrations/
+portofolio/         # konfigurasi proyek (settings.py, urls.py)
+templates/
+    base.html
+    index.html
+    certifications.html
+    certification_form.html   # dipakai untuk tambah dan ubah
+    components/certification_delete_modal.html
+static/
+    css/style.css
+    js/theme.js
+    img/
 ```
 
 ---
@@ -154,6 +187,8 @@ Bagian yang dibantu AI
 1. Penjelasan materi Tutorial 03 (skeleton template, `ModelForm`, CSRF, serialize/deserialize JSON) dalam bahasa yang lebih mudah dipahami
 2. Pemecahan Tutorial 03 dan Tugas 3 menjadi beberapa langkah/commit, beserta contoh kode yang disesuaikan ke model `Certification` (`base.html`, `forms.py`, view create/edit/delete/JSON, template form, modal hapus, dan CSS pendukung)
 3. Pengecekan kode saya terhadap PDF tutorial dan checklist tugas, serta penambahan fitur update, tombol tambah/edit, dan CSS terkait pada tahap akhir
+4. Fitur tambahan atas permintaan saya, yang diedit langsung oleh AI: tampilan flash message di `base.html`, endpoint JSON pengalaman (`/api/experiences/`) beserta helper `json_response`, 14 unit test baru untuk create/edit/delete/JSON, dan penulisan ulang bagian atas README (fitur, endpoint, cara menjalankan, struktur berkas)
+5. Perubahan tampilan yang saya minta ke AI: font Poppins, foto pada kartu proyek, penambahan skill Java, dan border foto profil
 
 Strategi prompting: saya memberikan PDF Tutorial 03 dan Tugas 3, meminta AI menjelaskan materi terlebih dahulu, lalu meminta panduan per commit (saya yang mengetik, menjalankan, dan melakukan commit sendiri). Setiap langkah saya minta dicek ulang terhadap PDF, dan saya meminta AI membaca file proyek untuk memverifikasi hasil edit saya.
 
@@ -165,6 +200,6 @@ Perbaikan serta verifikasi manual yang saya lakukan
 4. me-refactor `index.html` agar memakai `base.html`, menghapus fungsi `show_certifications` yang terduplikasi, dan meninjau ulang agar struktur kode mengikuti PDF
 5. melakukan commit secara bertahap dengan pesan yang deskriptif
 
-Keterbatasan AI yang saya temui: instruksi AI sempat tidak sinkron dengan PDF (misalnya struktur modal hapus yang keliru pada percobaan pertama) dan beberapa langkah tidak menyebutkan detail yang membuat error, seperti `{% load static %}` yang harus ditulis ulang di template turunan. AI juga tidak bisa menjalankan klik/submit form di browser saya, sehingga pengujian alur tambah, ubah, hapus tetap saya lakukan sendiri.
+Keterbatasan AI yang saya temui: instruksi AI sempat tidak sinkron dengan PDF (misalnya struktur modal hapus yang keliru pada percobaan pertama) dan beberapa langkah tidak menyebutkan detail yang membuat error, seperti `{% load static %}` yang harus ditulis ulang di template turunan. AI juga tidak bisa menjalankan klik/submit form di browser saya, sehingga pengujian alur tambah, ubah, hapus tetap saya lakukan sendiri. Unit test buatan AI hanya memeriksa HTML dan data di sisi server, bukan tampilan visual (misalnya flash message, foto kartu proyek, dan border foto profil), jadi hal tersebut tetap saya periksa langsung di browser. Isi teks kartu proyek yang ditulis AI juga saya verifikasi terhadap data saya sendiri, karena AI tidak mengetahui detail proyek saya di luar yang ada di repositori.
 
 
