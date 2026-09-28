@@ -11,7 +11,7 @@
         try {
             localStorage.setItem('theme', value);
         } catch (e) {
-            /* localStorage unavailable (private mode, etc.) — theme just won't persist */
+            
         }
     }
 
