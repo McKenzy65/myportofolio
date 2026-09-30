@@ -20,6 +20,8 @@
                 </p>
             {% endif %}
 
+            <button type="button" class="button button-secondary" onclick="showToast('Notifikasi Sistem', 'Toast berhasil dimuat!', 'success')">Test Toast</button>
+
             <form method="get" action="{% url 'main:show_certifications' %}" class="cert-search">
                 <input type="search"
                        name="title"

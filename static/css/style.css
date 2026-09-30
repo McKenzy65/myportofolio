@@ -1315,3 +1315,53 @@ ul, ol {
     background: rgba(255, 255, 255, 0.25);
     font-size: 0.8rem;
 }
+
+
+/* toast */
+.toast-component {
+    position: fixed;
+    inset: auto 2rem 2rem auto;
+    margin: 0;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 25px rgba(28, 25, 23, 0.15);
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    background-color: var(--bg-raised);
+    border: 1px solid var(--line);
+    color: inherit;
+}
+
+.toast-component:popover-open {
+    display: flex;
+}
+
+.toast-hidden {
+    opacity: 0;
+    transform: translateY(150%);
+    pointer-events: none;
+}
+
+.toast-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+    font-family: var(--font-display);
+}
+
+.toast-message {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Modifikasi border kiri berdasarkan tipe notifikasi */
+.toast-success { border-left: 4px solid #22c55e; }
+.toast-error { border-left: 4px solid #b42318; }
+.toast-normal { border-left: 4px solid var(--accent); }
