@@ -68,8 +68,8 @@ def show_main(request):
         "npm": "2506616711",
         "study_program": "S1 Sistem Informasi",
         "bio": (
-            "Mahasiswa Ilmu Komputer Universitas Indonesia yang sedang belajar "
-            "pada pengembangan perangkat lunak dan pendidikan."
+            "Computer Science student @Universitas Indonesia, exploring software, "
+            "technology, and whatever seems worth building."
         ),
         "last_login": last_login,
     }
