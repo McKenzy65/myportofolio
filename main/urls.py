@@ -11,6 +11,7 @@ from main.views import (
     login_user,
     logout_user,
     toggle_star,
+    create_certification_ajax,
 )
 
 app_name = 'main'
@@ -27,5 +28,6 @@ urlpatterns = [
     path("login/", login_user, name="login"),
     path("logout/", logout_user, name="logout"),
     path("certifications/<int:certification_id>/star/", toggle_star, name="toggle_star"),
+    path("certifications/add-ajax/", create_certification_ajax, name="create_certification_ajax"),
 
 ]

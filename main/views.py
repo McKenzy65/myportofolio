@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from main.models import Experience, Certification
 from main.forms import CertificationForm
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
 from django.core import serializers
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -137,17 +138,35 @@ def json_response(queryset):
     )
 
 def get_certifications_json(request):
-    """Data sertifikasi dalam JSON. Mendukung filter judul lewat ?title=."""
+    """Data sertifikasi dalam JSON, termasuk info star untuk pengguna saat ini.
+
+    Mendukung filter judul lewat ?title=. JSON dirakit manual (bukan serializers)
+    karena butuh is_starred yang bergantung pada request.user.
+    """
     title_query = request.GET.get("title", "").strip()
-    certifications = Certification.objects.all()
+    certifications = Certification.objects.prefetch_related("starred_by").all()
 
     if title_query:
         certifications = certifications.filter(title__icontains=title_query)
 
-    return HttpResponse(
-        serializers.serialize("json", certifications, use_natural_foreign_keys=True),
-        content_type="application/json",
-    )
+    data = []
+    for cert in certifications:
+        starred_users = list(cert.starred_by.all())
+        is_starred = request.user.is_authenticated and request.user in starred_users
+        data.append({
+            "model": "main.certification",
+            "pk": cert.pk,
+            "fields": {
+                "title": cert.title,
+                "description": cert.description,
+                "year": cert.year,
+                "is_highlight": cert.is_highlight,
+                "star_count": len(starred_users),
+                "is_starred": is_starred,
+                "starred_by_names": ", ".join(u.username for u in starred_users),
+            },
+        })
+    return JsonResponse(data, safe=False)
 
 def get_experiences_json(request):
     """Data pengalaman dalam JSON. Mendukung filter kategori lewat ?category=."""
@@ -160,14 +179,7 @@ def get_experiences_json(request):
     return json_response(experiences)
 
 def show_certifications(request):
-    json_response = get_certifications_json(request)
-    certifications = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    certifications = [cert.object for cert in certifications]
-    title_query = request.GET.get("title", "").strip()
-
+    """Halaman kerangka sertifikasi; datanya diambil browser lewat AJAX."""
     is_editor = (
         request.user.is_authenticated
         and request.user.groups.filter(name="Editor").exists()
@@ -175,8 +187,28 @@ def show_certifications(request):
 
     context = {
         "name": PORTFOLIO_OWNER,
-        "certification_list": certifications,
-        "title_query": title_query,
+        "title_query": request.GET.get("title", "").strip(),
         "is_editor": is_editor,
+        "form": CertificationForm(),
     }
     return render(request, "certifications.html", context)
+
+
+@require_POST
+def create_certification_ajax(request):
+    """Tambah sertifikasi lewat AJAX. Hanya superuser; balasan selalu JSON."""
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan sertifikasi."},
+            status=403,
+        )
+
+    form = CertificationForm(request.POST)
+    if form.is_valid():
+        certification = form.save()
+        return JsonResponse(
+            {"message": "Sertifikasi berhasil ditambahkan.", "pk": certification.pk},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)

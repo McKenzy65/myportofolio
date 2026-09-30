@@ -1,0 +1,41 @@
+<div id="add-certification-modal"
+     class="certification-form-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="add-certification-modal-title">
+    <button type="button"
+            class="certification-form-modal__backdrop"
+            popovertarget="add-certification-modal"
+            popovertargetaction="hide"
+            aria-label="Tutup form tambah sertifikasi"></button>
+
+    <div class="certification-form-modal__content">
+        <button type="button"
+                class="certification-form-modal__close"
+                popovertarget="add-certification-modal"
+                popovertargetaction="hide"
+                aria-label="Tutup form tambah sertifikasi">&times;</button>
+
+        <h2 id="add-certification-modal-title">Tambah Sertifikasi Baru</h2>
+        <form id="certification-form" method="post" action="{% url 'main:create_certification' %}">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                <p class="form-error">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <div class="certification-form-modal__actions">
+                <button type="button"
+                        class="button button-secondary"
+                        popovertarget="add-certification-modal"
+                        popovertargetaction="hide">Batal</button>
+                <button type="submit" class="button">Tambah Sertifikasi</button>
+            </div>
+        </form>
+    </div>
+</div>

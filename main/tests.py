@@ -43,19 +43,24 @@ class CertificationTest(TestCase):
         self.assertEqual(cert.year, 2026)
         self.assertFalse(cert.is_highlight)
 
-    def test_certifications_page_displays_data_when_available(self):
+    def test_certifications_data_available_in_json(self):
         Certification.objects.create(
             title="IELTS",
             description="British Council.",
             year=2024,
         )
-        response = Client().get('/certifications/')
+        response = Client().get('/api/certifications/')
         self.assertContains(response, "IELTS")
 
-    def test_certifications_page_displays_empty_state(self):
+    def test_certifications_json_empty_when_no_data(self):
         Certification.objects.all().delete()
+        response = Client().get('/api/certifications/')
+        self.assertEqual(json.loads(response.content), [])
+
+    def test_certifications_page_has_ajax_containers(self):
         response = Client().get('/certifications/')
-        self.assertContains(response, "Belum ada data sertifikasi di database.")
+        for element_id in ('id="loading"', 'id="error"', 'id="empty"', 'id="grid"'):
+            self.assertContains(response, element_id)
 
 class CertificationCrudTest(TestCase):
     """Create, update, dan delete sertifikasi lewat form."""
@@ -166,10 +171,9 @@ class JsonDeliveryTest(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["fields"]["title"], "Google Project Management")
 
-    def test_certifications_page_search_uses_title_query(self):
+    def test_certifications_page_prefills_search_from_query(self):
         response = self.client.get(reverse("main:show_certifications"), {"title": "ielts"})
-        self.assertContains(response, "IELTS")
-        self.assertNotContains(response, "Google Project Management")
+        self.assertContains(response, 'value="ielts"')
 
     def test_experiences_json_returns_data_and_filters_by_category(self):
         Experience.objects.create(title="Riset AI", description="Riset.", category="research")
@@ -279,9 +283,73 @@ class RoleAuthorizationTest(TestCase):
         self.assertRedirects(delete_response, reverse("main:show_certifications"))
         self.assertFalse(Certification.objects.filter(pk=self.cert.pk).exists())
 
-    def test_json_endpoint_does_not_leak_user_id(self):
+    def test_json_endpoint_shows_usernames_not_user_ids(self):
         self.cert.starred_by.add(self.regular_user)
         response = self.client.get(reverse("main:get_certifications_json"))
-        data = json.loads(response.content)
-        starred = next(c["fields"]["starred_by"] for c in data if c["pk"] == self.cert.pk)
-        self.assertEqual(starred, [["regular_test"]])
+        fields = next(c["fields"] for c in json.loads(response.content) if c["pk"] == self.cert.pk)
+        self.assertEqual(fields["star_count"], 1)
+        self.assertEqual(fields["starred_by_names"], "regular_test")
+        self.assertNotIn("starred_by", fields)
+
+    def test_json_is_starred_depends_on_current_user(self):
+        self.cert.starred_by.add(self.regular_user)
+        url = reverse("main:get_certifications_json")
+
+        anonymous = json.loads(self.client.get(url).content)
+        self.assertFalse(anonymous[0]["fields"]["is_starred"])
+
+        self.client.login(username="regular_test", password="testpass123")
+        logged_in = json.loads(self.client.get(url).content)
+        self.assertTrue(logged_in[0]["fields"]["is_starred"])
+
+
+class CertificationAjaxCreateTest(TestCase):
+    """Endpoint create_certification_ajax dan pembersihan input (anti-XSS)."""
+
+    def setUp(self):
+        Certification.objects.all().delete()
+        self.url = reverse("main:create_certification_ajax")
+        self.data = {"title": "Baru", "description": "Deskripsi.", "year": 2026}
+        self.superuser = User.objects.create_superuser("owner_ajax", password="testpass123")
+        self.regular = User.objects.create_user("regular_ajax", password="testpass123")
+
+    def test_superuser_creates_certification_returns_201(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Certification.objects.count(), 1)
+
+    def test_regular_user_gets_403_json(self):
+        self.client.force_login(self.regular)
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("message", response.json())
+        self.assertEqual(Certification.objects.count(), 0)
+
+    def test_anonymous_gets_403_json_not_redirect(self):
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_method_not_allowed(self):
+        self.client.force_login(self.superuser)
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+
+    def test_invalid_data_returns_400_with_errors(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(self.url, {**self.data, "year": "abc"})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("year", response.json()["errors"])
+
+    def test_html_only_title_is_rejected(self):
+        self.client.force_login(self.superuser)
+        payload = {**self.data, "title": "<img src=x onerror=alert(1)>"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["errors"])
+        self.assertEqual(Certification.objects.count(), 0)
+
+    def test_html_tags_are_stripped_from_description(self):
+        self.client.force_login(self.superuser)
+        payload = {**self.data, "description": "Halo <b>dunia</b>"}
+        self.client.post(self.url, payload)
+        self.assertEqual(Certification.objects.get().description, "Halo dunia")
