@@ -1,6 +1,6 @@
 import json
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.test import TestCase, Client
 from django.urls import reverse
 from main.models import Experience, Certification
@@ -353,3 +353,32 @@ class CertificationAjaxCreateTest(TestCase):
         payload = {**self.data, "description": "Halo <b>dunia</b>"}
         self.client.post(self.url, payload)
         self.assertEqual(Certification.objects.get().description, "Halo dunia")
+
+    def test_html_only_description_is_rejected(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            self.url, {**self.data, "description": '<img src="x" onerror="alert(1)">'},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("description", response.json()["errors"])
+        self.assertEqual(Certification.objects.count(), 0)
+
+    def test_editor_cannot_create_through_ajax(self):
+        self.regular.groups.add(Group.objects.get_or_create(name="Editor")[0])
+        self.client.force_login(self.regular)
+        response = self.client.post(self.url, self.data)
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("message", response.json())
+        self.assertEqual(Certification.objects.count(), 0)
+
+    def test_ajax_create_requires_csrf_even_for_owner(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.superuser)
+        self.assertEqual(client.post(self.url, self.data).status_code, 403)
+        self.assertEqual(Certification.objects.count(), 0)
+
+        client.get(reverse("main:show_certifications"))
+        token = client.cookies["csrftoken"].value
+        response = client.post(self.url, self.data, HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Certification.objects.count(), 1)
