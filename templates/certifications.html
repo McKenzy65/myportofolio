@@ -10,8 +10,9 @@
     <section class="section certs" id="certs" aria-labelledby="certs-title">
         <div class="container">
             <div class="section-head">
-                <h2 id="certs-title">Penghargaan &amp; sertifikasi</h2>
-                <p>Kompetisi, riset, dan sertifikasi yang menandai perjalanan belajar saya.</p>
+                <div><span class="page-eyebrow">PORTOFOLIO / PENCAPAIAN</span>
+                    <h1 id="certs-title">Penghargaan &amp;<br>sertifikasi<span class="cert-heading-dot">.</span></h1></div>
+                <p>Jejak belajar, ide, dan pencapaian.<br>Temukan cerita yang menarik buat kamu.</p>
             </div>
 
             {% if user.is_superuser %}
@@ -24,12 +25,14 @@
             </p>
             {% endif %}
 
+            <div class="cert-discovery">
             <form id="certification-search-form" class="cert-search">
+                <span class="cert-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg></span>
                 <input type="search"
                        id="search-input"
                        name="title"
                        value="{{ title_query }}"
-                       placeholder="Cari berdasarkan judul sertifikasi"
+                       placeholder="Cari sertifikasi atau penghargaan..."
                        aria-label="Cari berdasarkan judul sertifikasi">
                 <button type="submit" class="button">Cari</button>
             </form>
@@ -51,11 +54,13 @@
                         <option value="title">Judul A–Z</option>
                     </select>
                 </label>
-                <label class="cert-filter-check"><input id="highlight-filter" type="checkbox"> Unggulan saja</label>
+                <label class="cert-filter-check"><input id="highlight-filter" type="checkbox"><span><span aria-hidden="true">✦</span> Unggulan saja</span></label>
                 <label class="cert-filter-check"{% if not user.is_authenticated %} title="Login untuk melihat favorit"{% endif %}>
-                    <input id="starred-filter" type="checkbox"{% if not user.is_authenticated %} disabled{% endif %}> Favorit saya
+                    <input id="starred-filter" type="checkbox"{% if not user.is_authenticated %} disabled{% endif %}><span><span aria-hidden="true">★</span> {% if user.is_authenticated %}Favorit saya{% else %}Favorit · login{% endif %}</span>
                 </label>
                 <button id="reset-filters" type="button" class="button button-secondary">Reset filter</button>
+            </div>
+            {% if not user.is_authenticated %}<p class="cert-login-hint"><a href="{% url 'main:login' %}">Masuk</a> untuk memberi star dan mengumpulkan favorit kamu.</p>{% endif %}
             </div>
             <p id="result-count" class="cert-result-count" role="status" aria-live="polite"></p>
 
@@ -169,15 +174,14 @@
                     </button>
                </form>`
             : `<div class="cert-star-guest"><span>★ ${escapeHtml(cert.star_count)} star</span>
-                   <a href="{% url 'main:login' %}">Login untuk memberi star</a></div>`;
+                   <a href="{% url 'main:login' %}">Masuk untuk star <span aria-hidden="true">↗</span></a></div>`;
 
         articleElement.innerHTML = `
-            <div class="cert-card-meta"><span class="cert-year">${escapeHtml(cert.year)}</span>
+            <div class="cert-card-meta"><span class="cert-emblem" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v13H6zM9 7h6M9 10h4M9 16v5l3-2 3 2v-5"/></svg></span><span class="cert-year">${escapeHtml(cert.year)}</span>
                 ${cert.is_highlight ? '<span class="cert-badge">Unggulan</span>' : ''}</div>
             <h3>${escapeHtml(cert.title)}</h3>
             <p>${escapeHtml(cert.description)}</p>
-            ${starHtml}
-            ${actionsHtml}
+            <div class="cert-card-footer">${starHtml}${actionsHtml}</div>
         `;
         return articleElement;
     }
