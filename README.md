@@ -9,10 +9,16 @@ Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tuto
 ## Fitur
 
 - **Halaman utama (`/`)**: About Me, Skills, Pendidikan, Proyek (filter kategori tanpa JavaScript), dan Pengalaman yang diambil dari database.
-- **Sertifikasi (`/certifications/`)**: data dari database dengan pencarian judul, serta tambah, ubah, dan hapus lewat form (hapus memakai modal konfirmasi berbasis atribut `popover`).
+- **Sertifikasi (`/certifications/`)**: daftar dimuat melalui AJAX, pencarian judul dengan debounce 300 ms, serta kondisi loading, kosong, dan error. Pemilik dapat menambah data lewat modal tanpa reload; edit memakai halaman form dan hapus memakai konfirmasi.
 - **Template dasar (`templates/base.html`)**: header, footer, dan kerangka HTML dipakai bersama lewat `{% extends %}`.
 - **Data delivery JSON**: data sertifikasi dan pengalaman tersedia sebagai JSON.
 - **Flash message** setelah tambah, ubah, atau hapus data, dan **mode gelap/terang** (`static/js/theme.js`).
+- **Toast** untuk hasil penambahan AJAX, kesalahan validasi, dan kegagalan memuat daftar.
+- **Hak akses**: semua pengunjung dapat membaca; pengguna login dapat memberi/membatalkan star; grup `Editor` dapat mengedit; superuser dapat menambah, mengedit, dan menghapus.
+- **Perlindungan input**: POST dilindungi CSRF, teks dibersihkan dengan `strip_tags` pada `ModelForm`, dan nilai dari JSON di-escape sebelum masuk ke HTML.
+- **Eksplorasi sertifikasi**: filter tahun, unggulan, dan favorit pribadi dapat digabungkan dengan pencarian; urutkan terbaru, terlama, judul, atau star terbanyak. Jumlah hasil, reset filter, dan tombol coba lagi membantu menemukan data.
+- **Star tanpa reload**: pengguna login dapat memberi/membatalkan star lewat Fetch API; daftar diperbarui sambil mempertahankan pencarian dan filter.
+- **Tampilan akun**: login dan registrasi memakai layout dua panel di desktop dan satu kolom di mobile, field konsisten dengan tema, tombol lihat/sembunyikan kata sandi, serta pesan validasi di dekat field. Kedua halaman menggunakan komponen form bersama.
 
 ## Endpoint
 
@@ -21,10 +27,15 @@ Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tuto
 | `/` | GET | Halaman utama |
 | `/certifications/` | GET | Daftar sertifikasi, mendukung `?title=` |
 | `/certifications/add/` | GET, POST | Form tambah sertifikasi |
+| `/certifications/add-ajax/` | POST | Tambah sertifikasi via AJAX, khusus superuser; JSON 201/400/403 |
 | `/certifications/<id>/edit/` | GET, POST | Form ubah sertifikasi |
 | `/certifications/<id>/delete/` | POST | Hapus sertifikasi |
-| `/api/certifications/` | GET | Sertifikasi dalam JSON, mendukung `?title=` |
+| `/api/certifications/` | GET | Sertifikasi dalam JSON; parameter `title`, `year`, `highlight=1`, `starred=1` (wajib login), `sort=newest/oldest/title/popular` |
 | `/api/experiences/` | GET | Pengalaman dalam JSON, mendukung `?category=` |
+| `/certifications/<id>/star/` | POST | Memberi/membatalkan star, wajib login; JSON jika header Accept berisi application/json |
+| `/register/` | GET, POST | Registrasi pengguna |
+| `/login/` | GET, POST | Login pengguna |
+| `/logout/` | GET | Logout pengguna |
 
 ## Menjalankan proyek
 
@@ -60,9 +71,12 @@ templates/
     certifications.html
     certification_form.html   # dipakai untuk tambah dan ubah
     components/certification_delete_modal.html
+    components/certification_form_modal.html
+    components/toast.html
 static/
     css/style.css
     js/theme.js
+    js/toast.js
     img/
 ```
 
@@ -148,6 +162,59 @@ yang dikerjakan:
 7. menambahkan `use_natural_foreign_keys=True` pada `get_certifications_json` supaya `starred_by` menampilkan username, bukan id pengguna
 8. menambahkan 8 unit test baru untuk 4 peran (pengunjung, user biasa, editor, superuser), total 30 unit test
 9. menambahkan skrip pengujian end-to-end dengan Selenium (`test_e2e.py`, bagian opsional Tutorial 04) untuk memverifikasi alur login, cookie, dan otorisasi lewat browser automate
+
+### Tugas 5
+
+Yang dikerjakan:
+
+1. Mengubah halaman Certifications menjadi kerangka HTML; browser mengambil daftar lewat `fetch()` dari `/api/certifications/`. `JsonResponse` dirakit manual dengan jumlah star dan status star pengguna.
+2. Menambahkan kondisi loading, kosong, hasil pencarian kosong, dan error. Pencarian judul memakai debounce 300 ms serta `AbortController` untuk membatalkan permintaan sebelumnya.
+3. Memindahkan form tambah ke modal. Endpoint `/certifications/add-ajax/` memvalidasi `CertificationForm`, memeriksa superuser di server, dan mengembalikan JSON dengan status 201, 400, atau 403. POST menyertakan CSRF; setelah berhasil daftar dimuat ulang lewat AJAX.
+4. Menggunakan toast untuk sukses, kesalahan validasi, dan kegagalan jaringan. Event listener form hanya dipasang jika modal tersedia untuk pengguna tersebut.
+5. Melakukan escaping pada teks JSON sebelum dimasukkan ke HTML, dan membersihkan judul/deskripsi dengan `strip_tags` melalui `clean_title`/`clean_description`. Input yang hanya berisi tag dan menjadi kosong ditolak.
+6. Mempertahankan hak akses Tugas 4: pengunjung membaca, pengguna biasa memberi star, editor mengedit, dan pemilik mengelola seluruh data. Menambahkan pengujian penolakan create oleh editor, CSRF, dan deskripsi kosong setelah pembersihan.
+7. Membatasi lebar navbar ke container pada mobile agar tidak membuat halaman melebar, dan mengembalikan scroll modal ke bagian judul saat dibuka.
+
+Fitur tambahan di luar checklist minimal:
+
+- Filter **tahun**, **unggulan**, dan **favorit saya** dapat digabungkan dengan pencarian judul. Favorit dibatasi pada akun yang sedang login di sisi server.
+- Pengurutan **terbaru**, **terlama**, **judul A–Z**, dan **star terbanyak** memakai pilihan field ORM yang tetap, dengan urutan tambahan berdasarkan ID agar hasil stabil.
+- **Star/unstar lewat AJAX** dengan CSRF, tombol dinonaktifkan selama request untuk mencegah klik ganda, dan toast hasil aksi. Saat unstar dalam filter Favorit saya, kartu hilang dari hasil tanpa mengganti halaman.
+- Badge unggulan, jumlah hasil dengan `aria-live`, reset filter, dan tombol coba lagi untuk memulihkan kegagalan pemuatan. Tahun dari data yang baru ditambahkan langsung masuk ke pilihan filter.
+
+Audit checklist minimal:
+
+| Poin | Implementasi dan bukti |
+|---|---|
+| Kerangka halaman + fetch JSON | `show_certifications` merender kerangka; `fetchCertifications` mengambil dan membangun kartu di browser. |
+| JsonResponse manual + informasi star | `get_certifications_json` menyusun `fields`, `star_count`, `is_starred`, dan nama pemberi star. |
+| Loading, kosong, error | Kontainer `loading`, `empty`, `error`, dan `grid` ditampilkan bergantian. |
+| Pencarian AJAX + debounce | Filter `title__icontains`; input memakai timer 300 ms, tombol Cari berjalan segera, dan request sebelumnya dibatalkan. |
+| Form tambah di modal | `certification_form_modal.html` disertakan di halaman daftar untuk pemilik. |
+| POST + ModelForm + JSON 201/400/403 | `create_certification_ajax`: sukses 201, validasi gagal 400, pengguna tanpa hak 403. |
+| Hak akses di server | Tambah hanya superuser; editor tidak boleh tambah/hapus; pengguna biasa hanya star. Hak akses halaman edit/hapus dari Tugas 4 tetap berlaku. |
+| CSRF pada POST | Form berisi `csrfmiddlewaretoken`; AJAX juga mengirim `X-CSRFToken`. Test CSRF dijalankan dengan `enforce_csrf_checks=True`. |
+| Daftar diperbarui tanpa reload | Setelah create berhasil, `fetchCertifications` dijalankan ulang dengan filter aktif. |
+| Toast sukses/gagal/validasi | `showToast` dipakai untuk create, star, error pemuatan, dan pesan validasi server. |
+| Escaping semua teks di HTML JavaScript | Teks kartu dan URL dinamis memakai `escapeHtml`; toast dan jumlah hasil memakai `textContent`; opsi tahun memakai `new Option`. |
+| strip_tags di clean_<field> | `CertificationForm.clean_title` dan `clean_description` membersihkan tag serta menolak hasil kosong. |
+| runserver + semua peran | `manage.py runserver` diuji dengan halaman dan JSON yang mengembalikan 200. Tes browser memakai pengunjung, user biasa, editor, dan superuser. |
+
+Pertanyaan reflektif:
+
+1. **Debouncing** menunda suatu aksi sampai tidak ada event baru selama jeda tertentu. Pada pencarian ini, setiap ketikan membatalkan timer sebelumnya; setelah pengguna berhenti mengetik selama 300 ms, permintaan AJAX dikirim. Ini mengurangi permintaan ke server dibanding mengirim satu permintaan untuk setiap karakter. Tombol Cari tetap menjalankan pencarian segera. `AbortController` melengkapi debounce dengan membatalkan permintaan lama yang sudah terlanjur dikirim.
+2. **`await`** menunggu sebuah Promise selesai di dalam fungsi async tanpa memblokir seluruh browser. `await fetch()` menghasilkan objek `Response`, kemudian `await response.json()` membaca dan mengurai body JSON secara asinkron. Tanpa `await`, hasilnya masih Promise, sehingga kita tidak bisa langsung memakai `.ok` atau array datanya; alternatifnya adalah `.then()`. `fetch()` tidak otomatis menolak Promise untuk status HTTP 400/403/500, jadi `response.ok` tetap perlu diperiksa.
+3. **XSS** terjadi saat data dari pengguna ditafsirkan sebagai kode yang dijalankan browser. Django Template Language secara bawaan melakukan autoescaping, tetapi perlindungan itu tidak otomatis berlaku ketika JavaScript mengambil JSON lalu merangkainya lewat `innerHTML`. Karena itu judul, deskripsi, tahun, jumlah star, dan nama pemberi star di-escape sebelum disisipkan. Toast memakai `textContent`. Server juga membersihkan input lewat `strip_tags`; pembersihan server tetap harus dilengkapi escaping saat menampilkan data, termasuk data lama yang mungkin sudah tersimpan.
+
+Pemeriksaan browser yang dapat diulang:
+
+- Buka `/certifications/` tanpa login: daftar tetap tampil dan modal tambah tidak tersedia.
+- Ketik pencarian dan lihat Network: permintaan baru muncul setelah jeda 300 ms; pencarian tidak mengganti halaman.
+- Login sebagai pemilik, tambah melalui modal: POST menghasilkan 201, toast tampil, modal tertutup, dan daftar diperbarui tanpa reload.
+- Uji nilai tahun tidak valid atau judul/deskripsi hanya tag melalui POST: respons 400 berisi pesan validasi. Request tanpa CSRF ditolak 403; editor dan pengguna biasa ditolak 403 untuk endpoint tambah AJAX.
+- Uji teks `<img src="x" onerror="alert('XSS!')">`: tidak boleh muncul alert. Input yang menjadi kosong setelah tag dibuang ditolak.
+
+Hasil verifikasi lokal oleh Codex pada 5 Oktober 2026: seluruh 48 unit test lulus; `manage.py check` tidak melaporkan masalah dan `makemigrations --check --dry-run` tidak menemukan perubahan model. Unit test terakhir menggunakan MD5 hanya sebagai hasher pada proses test untuk mempercepat pengujian; konfigurasi password aplikasi tidak diubah. Pengujian Chrome headless dengan database test terpisah juga lulus untuk empat peran, escaping data lama, debounce, tambah lewat modal tanpa reload dengan CSRF, toast validasi, filter tahun/unggulan/favorit, pengurutan, reset, star/unstar tanpa reload, kegagalan fetch dan pemulihan melalui tombol Coba lagi, serta halaman/modal pada lebar 390 px. `manage.py runserver` juga dijalankan pada port sementara; halaman dan endpoint JSON dapat diakses tanpa login. Database portofolio lokal tidak dipakai untuk menambah data uji.
 
 ---
 
@@ -236,5 +303,23 @@ Perbaikan serta verifikasi manual yang saya lakukan
 5. mengecek langsung endpoint `/api/certifications/` di browser untuk memastikan `starred_by` tidak membocorkan id pengguna
 
 Keterbatasan AI yang saya temui: AI sempat menandai `edit_certification` tanpa proteksi sama sekali dan `get_certifications_json` yang menghitung `use_natural_foreign_keys` tapi tidak memakainya, keduanya bug yang lolos dari saya sendiri karena saya mengetik terburu-buru mengejar tenggat waktu. AI juga tidak bisa menjalankan Burp Suite (bagian opsional Tutorial 04) karena itu aplikasi desktop terpisah yang perlu diinstal dan dioperasikan manual, jadi bagian itu saya lewati dan cukup memahami konsepnya dari penjelasan AI.
+
+### Tugas 5
+
+Tools pada sesi ini: OpenAI Codex.
+
+Bagian yang dibantu AI: membaca PDF Tutorial 0–5 dan Tugas 1–5 untuk memahami konteks, memeriksa implementasi Certifications yang sudah ada, melengkapi dokumentasi Tugas 5, memperbaiki validasi deskripsi setelah `strip_tags`, memperjelas kondisi hasil pencarian kosong, menambahkan toast kegagalan pemuatan, memperbaiki lebar navbar dan posisi scroll modal pada mobile, serta menambahkan pengujian CSRF dan otorisasi editor. Implementasi utama AJAX, modal, toast, dan escaping sudah ada pada commit `2253054` sebelum sesi Codex ini.
+
+Strategi prompting: memberikan PDF tutorial/tugas, meminta pemahaman konteks dan cara menghubungkan folder VS Code, lalu memberikan lokasi `manage.py` untuk pemeriksaan proyek lokal.
+
+Ringkasan log prompting:
+
+1. Meminta memahami konteks dan cara melanjutkan Tugas 5 melalui VS Code.
+2. Memberikan `tugas-5.pdf` agar persyaratannya bisa dibaca.
+3. Memberikan alamat folder proyek melalui path `manage.py`.
+4. Meminta audit seluruh checklist minimal serta fitur inovasi untuk mendukung target nilai 4. Codex menambahkan filter gabungan, pengurutan, favorit pribadi, star/unstar AJAX, jumlah hasil, badge unggulan, reset filter, dan tombol coba lagi, serta pengujian server/browser untuk fitur tersebut.
+5. Meminta tampilan Certifications, login, dan buat akun diperbaiki agar lebih profesional. Codex merapikan pencarian/filter menjadi panel dengan pilihan pill, kartu sertifikasi, header, serta layout login/registrasi; menambahkan komponen `auth_fields.html`, `auth_story.html`, dan `auth.js`. Form autentikasi tetap memakai subclass form bawaan Django. Verifikasi browser mencakup gelap/terang di desktop, lebar mobile 390 px, tampil/sembunyikan password, penolakan konfirmasi password yang berbeda, registrasi berhasil, login salah/benar, serta pengujian ulang fitur AJAX. Seluruh pengujian memakai database test terpisah.
+
+Keterbatasan: jawaban reflektif di atas merupakan draf yang dibantu Codex dan perlu ditinjau agar sesuai pemahaman pribadi. Pengujian lokal tidak membuktikan keberhasilan deployment PWS, status pengumpulan SCELE, atau pemenuhan tenggat prasyarat Tutorial 05.
 
 
