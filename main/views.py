@@ -1,12 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from main.models import Experience, Certification
-from main.forms import CertificationForm
+from main.forms import CertificationForm, PortfolioAuthenticationForm, PortfolioUserCreationForm
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.core import serializers
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import redirect, render
 import datetime
 from django.contrib.auth.decorators import login_required
@@ -42,7 +41,7 @@ def toggle_star(request, certification_id):
 
 
 def register(request):
-    form = UserCreationForm(request.POST or None)
+    form = PortfolioUserCreationForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -56,7 +55,7 @@ def register(request):
     return render(request, "register.html", context)
 
 def login_user(request):
-    form = AuthenticationForm(request, data=request.POST or None)
+    form = PortfolioAuthenticationForm(request, data=request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         user = form.get_user()

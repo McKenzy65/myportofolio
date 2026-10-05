@@ -1,33 +1,29 @@
 {% extends "base.html" %}
+{% load static %}
 {% block meta %}
-    <title>Login - {{ name }}</title>
+<title>Login - {{ name }}</title>
+<meta name="description" content="Masuk untuk memberi star dan menyimpan sertifikasi favorit kamu.">
 {% endblock meta %}
 {% block content %}
-    <main>
-        <section class="experience-section">
-            <div class="container">
-                <h1>Login</h1>
-                {% for message in messages %}
-                    <p class="form-message">{{ message }}</p>
-                {% endfor %}
-                <form method="post" action="{% url 'main:login' %}" class="project-form">
-                    {% csrf_token %}
-                    {% for field in form %}
-                        <div class="form-group">
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                            {% for error in field.errors %}
-                                <p class="form-error">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <p class="form-error">{{ error }}</p>
-                    {% endfor %}
-                    <button type="submit" class="button">Login</button>
-                </form>
-                <p>Belum punya akun? <a href="{% url 'main:register' %}">Daftar di sini</a>.</p>
-            </div>
+<main class="auth-page">
+    <div class="container auth-layout">
+        {% include 'components/auth_story.html' %}
+        <section class="auth-card" aria-labelledby="auth-title">
+            <span class="page-eyebrow">WELCOME BACK</span>
+            <h1 id="auth-title">Selamat datang<br>kembali.</h1>
+            <p class="auth-description">Masuk untuk memberi star dan menyimpan sertifikasi favorit kamu.</p>
+            {% if form.non_field_errors %}
+            <div class="auth-alert" role="alert"><strong>Belum berhasil masuk</strong>{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>
+            {% endif %}
+            <form method="post" action="{% url 'main:login' %}" class="auth-form">
+                {% csrf_token %}
+                {% include 'components/auth_fields.html' %}
+                <button type="submit" class="button auth-submit">Masuk <span aria-hidden="true">→</span></button>
+            </form>
+            <p class="auth-switch">Belum punya akun? <a href="{% url 'main:register' %}">Buat akun</a></p>
+            <p class="auth-footnote">Kamu tetap bisa menjelajahi portofolio tanpa akun.</p>
         </section>
-    </main>
+    </div>
+</main>
+<script src="{% static 'js/auth.js' %}" defer></script>
 {% endblock content %}

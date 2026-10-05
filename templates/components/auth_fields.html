@@ -1,0 +1,27 @@
+{% for field in form %}
+<div class="auth-field{% if field.errors %} auth-field--error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <div class="auth-input-wrap">
+        {{ field }}
+        {% if field.field.widget.input_type == 'password' %}
+        <button type="button" class="password-toggle" data-password-target="{{ field.id_for_label }}"
+                aria-pressed="false" aria-label="Tampilkan {{ field.label|lower }}">Lihat</button>
+        {% endif %}
+    </div>
+    {% if field.help_text %}
+        {% if field.name == 'password1' %}
+        <details class="auth-guidelines" id="{{ field.auto_id }}_helptext">
+            <summary>Ketentuan kata sandi</summary>
+            {{ field.help_text|safe }}
+        </details>
+        {% else %}
+        <p class="auth-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>
+        {% endif %}
+    {% endif %}
+    {% if field.errors %}
+    <div class="auth-field-errors" id="{{ field.auto_id }}_error" role="alert">
+        {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
