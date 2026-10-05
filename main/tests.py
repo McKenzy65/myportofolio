@@ -382,3 +382,64 @@ class CertificationAjaxCreateTest(TestCase):
         response = client.post(self.url, self.data, HTTP_X_CSRFTOKEN=token)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Certification.objects.count(), 1)
+
+
+class CertificationDiscoveryTest(TestCase):
+    """Filter gabungan, urutan popularitas, dan favorit per akun."""
+
+    @classmethod
+    def setUpTestData(cls):
+        Certification.objects.all().delete()
+        cls.user = User.objects.create_user("discovery_user")
+        cls.other = User.objects.create_user("discovery_other")
+        cls.older = Certification.objects.create(title="Alpha", description="A", year=2024, is_highlight=True)
+        cls.newer = Certification.objects.create(title="Beta", description="B", year=2026)
+        cls.older.starred_by.add(cls.user, cls.other)
+        cls.newer.starred_by.add(cls.other)
+        cls.url = reverse("main:get_certifications_json")
+
+    def test_filters_combine_and_star_count_includes_other_users(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url, {"title": "alpha", "year": "2024", "highlight": "1", "starred": "1", "sort": "popular"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([c["pk"] for c in response.json()], [self.older.pk])
+        self.assertEqual(response.json()[0]["fields"]["star_count"], 2)
+
+    def test_sort_options_and_invalid_sort_fallback(self):
+        for sort, expected in [("newest", [self.newer.pk, self.older.pk]), ("oldest", [self.older.pk, self.newer.pk]), ("popular", [self.older.pk, self.newer.pk]), ("title", [self.older.pk, self.newer.pk]), ("unknown", [self.newer.pk, self.older.pk])]:
+            with self.subTest(sort=sort):
+                self.assertEqual([c["pk"] for c in self.client.get(self.url, {"sort": sort}).json()], expected)
+
+    def test_invalid_year_and_anonymous_favorites_are_rejected(self):
+        for year in ("not-a-year", "-1", "999999999999999999999"):
+            self.assertEqual(self.client.get(self.url, {"year": year}).status_code, 400)
+        self.assertEqual(self.client.get(self.url, {"starred": "1"}).status_code, 403)
+
+    def test_favorites_belong_to_current_account(self):
+        self.client.force_login(self.user)
+        self.assertEqual(len(self.client.get(self.url, {"starred": "1"}).json()), 1)
+        self.client.force_login(self.other)
+        self.assertEqual(len(self.client.get(self.url, {"starred": "1"}).json()), 2)
+
+    def test_ajax_star_toggles_and_preserves_existing_form_redirect(self):
+        url = reverse("main:toggle_star", args=[self.newer.pk])
+        self.assertEqual(self.client.post(url, HTTP_ACCEPT="application/json").status_code, 403)
+        self.client.force_login(self.user)
+        starred = self.client.post(url, HTTP_ACCEPT="application/json").json()
+        self.assertTrue(starred["is_starred"])
+        self.assertEqual(starred["star_count"], 2)
+        unstarred = self.client.post(url, HTTP_ACCEPT="application/json").json()
+        self.assertFalse(unstarred["is_starred"])
+        self.assertEqual(unstarred["star_count"], 1)
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertRedirects(self.client.post(url), reverse("main:show_certifications"))
+
+    def test_ajax_star_requires_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        url = reverse("main:toggle_star", args=[self.newer.pk])
+        self.assertEqual(client.post(url, HTTP_ACCEPT="application/json").status_code, 403)
+        client.get(reverse("main:show_certifications"))
+        response = client.post(url, HTTP_ACCEPT="application/json", HTTP_X_CSRFTOKEN=client.cookies["csrftoken"].value)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["is_starred"])

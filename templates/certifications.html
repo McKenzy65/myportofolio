@@ -34,15 +34,41 @@
                 <button type="submit" class="button">Cari</button>
             </form>
 
-            <div id="loading" class="empty-state hide">
+            <div class="cert-filters" aria-label="Filter sertifikasi">
+                <label>Tahun
+                    <select id="year-filter">
+                        <option value="">Semua tahun</option>
+                        {% for year in certification_years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Urutkan
+                    <select id="sort-select">
+                        <option value="newest">Terbaru</option>
+                        <option value="oldest">Terlama</option>
+                        <option value="popular">Star terbanyak</option>
+                        <option value="title">Judul A–Z</option>
+                    </select>
+                </label>
+                <label class="cert-filter-check"><input id="highlight-filter" type="checkbox"> Unggulan saja</label>
+                <label class="cert-filter-check"{% if not user.is_authenticated %} title="Login untuk melihat favorit"{% endif %}>
+                    <input id="starred-filter" type="checkbox"{% if not user.is_authenticated %} disabled{% endif %}> Favorit saya
+                </label>
+                <button id="reset-filters" type="button" class="button button-secondary">Reset filter</button>
+            </div>
+            <p id="result-count" class="cert-result-count" role="status" aria-live="polite"></p>
+
+            <div id="loading" class="empty-state hide" role="status">
                 <p>Memuat sertifikasi...</p>
             </div>
 
-            <div id="error" class="empty-state hide">
+            <div id="error" class="empty-state hide" role="alert">
                 <p>Gagal memuat data sertifikasi. Silakan coba lagi.</p>
+                <button id="retry-load" type="button" class="button">Coba lagi</button>
             </div>
 
-            <div id="empty" class="empty-state hide">
+            <div id="empty" class="empty-state hide" role="status">
                 <p>Belum ada data sertifikasi di database.</p>
             </div>
 
@@ -61,6 +87,7 @@
     const CREATE_CERTIFICATION_ENDPOINT = "{% url 'main:create_certification_ajax' %}";
     const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
     const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
+    const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
     const SEARCH_DEBOUNCE_DELAY = 300;
     let certificationsAbortController;
     let searchDebounceTimer;
@@ -73,6 +100,11 @@
     const searchForm = document.getElementById('certification-search-form');
     const searchInput = document.getElementById('search-input');
     const certificationForm = document.getElementById('certification-form');
+    const yearFilter = document.getElementById('year-filter');
+    const sortSelect = document.getElementById('sort-select');
+    const highlightFilter = document.getElementById('highlight-filter');
+    const starredFilter = document.getElementById('starred-filter');
+    const resultCount = document.getElementById('result-count');
 
     // Menampilkan hanya satu bagian halaman (loading / error / kosong / daftar)
     function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
@@ -95,7 +127,7 @@
     // Membuat elemen kartu sertifikasi
     function buildCertificationCardElement(item) {
         const cert = item.fields;
-        const certId = item.pk;
+        const certId = encodeURIComponent(String(item.pk));
 
         const articleElement = document.createElement('article');
         articleElement.className = 'cert' + (cert.is_highlight ? ' cert--highlight' : '');
@@ -112,11 +144,11 @@
             : 'Jadilah yang pertama memberi star';
 
         const editHtml = (IS_SUPERUSER || IS_EDITOR)
-            ? `<a href="${editUrl}" class="button button-secondary">Edit</a>`
+            ? `<a href="${escapeHtml(editUrl)}" class="button button-secondary">Edit</a>`
             : '';
 
         const deleteHtml = IS_SUPERUSER
-            ? `<form method="post" action="${deleteUrl}" class="star-form">
+            ? `<form method="post" action="${escapeHtml(deleteUrl)}" class="star-form">
                     {% csrf_token %}
                     <button type="submit" class="button button-danger"
                             onclick="return confirm('Yakin ingin menghapus sertifikasi ini?');">Hapus</button>
@@ -127,18 +159,24 @@
             ? `<div class="cert-actions">${editHtml}${deleteHtml}</div>`
             : '';
 
+        const starHtml = IS_AUTHENTICATED
+            ? `<form method="post" action="${escapeHtml(starUrl)}" class="star-form cert-star-form">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-star${isStarredClass}"
+                            aria-pressed="${cert.is_starred ? 'true' : 'false'}" title="${starTitle}">
+                        <span aria-hidden="true">★</span> ${starText}
+                        <span class="star-count">${escapeHtml(cert.star_count)}</span>
+                    </button>
+               </form>`
+            : `<div class="cert-star-guest"><span>★ ${escapeHtml(cert.star_count)} star</span>
+                   <a href="{% url 'main:login' %}">Login untuk memberi star</a></div>`;
+
         articleElement.innerHTML = `
-            <span class="cert-year">${escapeHtml(cert.year)}</span>
+            <div class="cert-card-meta"><span class="cert-year">${escapeHtml(cert.year)}</span>
+                ${cert.is_highlight ? '<span class="cert-badge">Unggulan</span>' : ''}</div>
             <h3>${escapeHtml(cert.title)}</h3>
             <p>${escapeHtml(cert.description)}</p>
-            <form method="post" action="${starUrl}" class="star-form">
-                {% csrf_token %}
-                <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
-                    <span aria-hidden="true">★</span>
-                    ${starText}
-                    <span class="star-count">${escapeHtml(cert.star_count)}</span>
-                </button>
-            </form>
+            ${starHtml}
             ${actionsHtml}
         `;
         return articleElement;
@@ -147,24 +185,34 @@
     // Mengambil data sertifikasi dengan Fetch API
     async function fetchCertifications(searchQuery = '') {
         if (certificationsAbortController) certificationsAbortController.abort();
-        certificationsAbortController = new AbortController();
+        const controller = new AbortController();
+        certificationsAbortController = controller;
 
         try {
             displayPageSection({ showLoading: true });
+            resultCount.textContent = 'Memuat hasil...';
 
-            const url = searchQuery
-                ? `${BASE_CERTIFICATIONS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
-                : BASE_CERTIFICATIONS_ENDPOINT;
+            const params = new URLSearchParams({ sort: sortSelect.value });
+            if (searchQuery) params.set('title', searchQuery);
+            if (yearFilter.value) params.set('year', yearFilter.value);
+            if (highlightFilter.checked) params.set('highlight', '1');
+            if (starredFilter.checked) params.set('starred', '1');
+            const url = `${BASE_CERTIFICATIONS_ENDPOINT}?${params}`;
 
             const response = await fetch(url, {
                 headers: { 'Accept': 'application/json' },
-                signal: certificationsAbortController.signal,
+                signal: controller.signal,
             });
             if (!response.ok) throw new Error('Failed to fetch data');
 
             const certificationData = await response.json();
+            if (controller.signal.aborted) return;
+            resultCount.textContent = `${certificationData.length} sertifikasi ditampilkan`;
 
             if (certificationData.length === 0) {
+                emptyState.querySelector('p').textContent = searchQuery || yearFilter.value || highlightFilter.checked || starredFilter.checked
+                    ? 'Tidak ada sertifikasi yang cocok. Coba ubah pencarian atau reset filter.'
+                    : 'Belum ada data sertifikasi di database.';
                 displayPageSection({ showEmpty: true });
             } else {
                 gridContainer.innerHTML = '';
@@ -177,6 +225,8 @@
             if (error.name === 'AbortError') return;
             console.error('Error loading certifications:', error);
             displayPageSection({ showError: true });
+            resultCount.textContent = 'Data belum dapat dimuat.';
+            showToast('Gagal memuat sertifikasi', 'Silakan coba cari kembali atau periksa koneksi.', 'error');
         }
     }
 
@@ -194,6 +244,50 @@
         event.preventDefault();
         clearTimeout(searchDebounceTimer);
         searchCertifications();
+    });
+
+    [yearFilter, sortSelect, highlightFilter, starredFilter].forEach(control => {
+        control.addEventListener('change', function () {
+            clearTimeout(searchDebounceTimer);
+            searchCertifications();
+        });
+    });
+    document.getElementById('reset-filters').addEventListener('click', function () {
+        clearTimeout(searchDebounceTimer);
+        searchInput.value = '';
+        yearFilter.value = '';
+        sortSelect.value = 'newest';
+        highlightFilter.checked = false;
+        starredFilter.checked = false;
+        searchCertifications();
+    });
+    document.getElementById('retry-load').addEventListener('click', searchCertifications);
+
+    // Delegasi event: kartu selalu dibuat ulang setelah pencarian atau filter berubah.
+    gridContainer.addEventListener('submit', async function (event) {
+        const form = event.target;
+        if (!form.classList.contains('cert-star-form')) return;
+        event.preventDefault();
+        const button = form.querySelector('button');
+        if (button.disabled) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: new FormData(form),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.message || `Gagal mengubah star (status ${response.status}).`);
+            showToast('Favorit diperbarui', result.message, 'success');
+            await fetchCertifications(searchInput.value.trim());
+        } catch (error) {
+            showToast('Gagal mengubah star', error.message, 'error');
+        } finally {
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+        }
     });
 
     function closeCertificationModal() {
@@ -232,6 +326,11 @@
             const result = await response.json().catch(() => ({}));
 
             if (response.ok) {
+                // Tahun baru langsung tersedia di filter tanpa perlu reload halaman.
+                const addedYear = certificationForm.elements.year.value;
+                if (![...yearFilter.options].some(option => option.value === addedYear)) {
+                    yearFilter.add(new Option(addedYear, addedYear));
+                }
                 certificationForm.reset();
                 closeCertificationModal();
                 showToast('Berhasil', 'Sertifikasi baru berhasil ditambahkan!', 'success');
@@ -253,6 +352,11 @@
     // Form hanya ada untuk superuser
     if (certificationForm) {
         certificationForm.addEventListener('submit', addCertification);
+        document.getElementById('add-certification-modal').addEventListener('toggle', function (event) {
+            if (event.newState === 'open') {
+                this.querySelector('.certification-form-modal__content').scrollTop = 0;
+            }
+        });
     }
 
     fetchCertifications(searchInput.value.trim());
