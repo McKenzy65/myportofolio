@@ -6,6 +6,7 @@ from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes,
 )
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from main.models import Certification
@@ -95,4 +96,19 @@ def certification_detail(request, certification_id):
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def certification_star(request, certification_id):
+    certification = get_object_or_404(Certification, pk=certification_id)
+    if certification.starred_by.filter(pk=request.user.pk).exists():
+        certification.starred_by.remove(request.user)
+    else:
+        certification.starred_by.add(request.user)
+    serializer = CertificationSerializer(
+        certification, context={"request": request},
+    )
     return Response(serializer.data)

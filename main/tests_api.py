@@ -550,3 +550,138 @@ class CertificationDetailAPITests(APITestCase):
         response = self.client_for("owner").post(self.url, self.payload, format="json")
         self.assertEqual(response.status_code, 405)
         self.assertEqual(self.saved_state(), before)
+
+
+class CertificationStarAPITests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        Certification.objects.all().delete()
+        cls.users = {
+            "member": User.objects.create_user(
+                username="star_member", email="private-star@example.com",
+            ),
+            "editor": User.objects.create_user(username="star_editor"),
+            "owner": User.objects.create_user(username="star_owner", is_superuser=True),
+        }
+        cls.users["editor"].groups.add(Group.objects.get_or_create(name="Editor")[0])
+        cls.other_user = User.objects.create_user(username="existing_star")
+        cls.target = Certification.objects.create(
+            title="Star target", description="Target description", year=2026,
+        )
+        cls.target.starred_by.add(cls.other_user)
+        cls.other = Certification.objects.create(
+            title="Unrelated", description="Other description", year=2025,
+        )
+        cls.url = reverse("api:certification-star", args=[cls.target.pk])
+
+    def client_for(self, role, enforce_csrf=False):
+        client = APIClient(enforce_csrf_checks=enforce_csrf)
+        client.force_login(self.users[role])
+        return client
+
+    def test_anonymous_requests_are_denied_without_changing_stars(self):
+        for method in ("get", "post"):
+            with self.subTest(method=method):
+                self.assertEqual(getattr(self.client, method)(self.url).status_code, 403)
+        self.assertEqual(list(self.target.starred_by.all()), [self.other_user])
+
+    def test_members_editors_and_owner_can_toggle_only_their_own_star(self):
+        for role in self.users:
+            client = self.client_for(role)
+            for expected_flag, expected_count in ((True, 2), (False, 1)):
+                with self.subTest(role=role, starred=expected_flag):
+                    response = client.post(self.url)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.data["id"], self.target.pk)
+                    self.assertEqual(response.data["is_starred"], expected_flag)
+                    self.assertEqual(response.data["star_count"], expected_count)
+                    self.assertEqual(
+                        self.target.starred_by.filter(pk=self.users[role].pk).exists(),
+                        expected_flag,
+                    )
+                    self.assertTrue(self.target.starred_by.filter(pk=self.other_user.pk).exists())
+        self.assertFalse(self.other.starred_by.exists())
+
+    def test_payload_cannot_choose_a_different_user_or_forge_star_fields(self):
+        response = self.client_for("member").post(self.url, {
+            "user": self.users["owner"].pk,
+            "user_id": self.users["owner"].pk,
+            "id": self.other.pk,
+            "starred_by": [self.users["owner"].pk],
+            "star_count": 999, "is_starred": False, "starred_by_names": "forged",
+        }, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["id"], self.target.pk)
+        self.assertTrue(response.data["is_starred"])
+        self.assertEqual(response.data["star_count"], 2)
+        self.assertEqual(set(self.target.starred_by.values_list("pk", flat=True)), {
+            self.other_user.pk, self.users["member"].pk,
+        })
+        self.assertFalse(self.other.starred_by.exists())
+
+    def test_authenticated_nonpost_methods_do_not_change_data(self):
+        client = self.client_for("member")
+        for method in ("get", "head", "put", "patch", "delete"):
+            with self.subTest(method=method):
+                self.assertEqual(getattr(client, method)(self.url).status_code, 405)
+                self.assertEqual(list(self.target.starred_by.all()), [self.other_user])
+        self.assertEqual(client.options(self.url).status_code, 200)
+        self.assertEqual(list(self.target.starred_by.all()), [self.other_user])
+
+    def test_missing_certification_returns_404_without_creating_relations(self):
+        url = reverse("api:certification-star", args=[self.other.pk + 1000])
+        response = self.client_for("member").post(url)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(Certification.starred_by.through.objects.count(), 1)
+
+    def test_session_star_requires_matching_csrf_cookie_and_header(self):
+        client = self.client_for("member", enforce_csrf=True)
+        client.get(reverse("rest_framework:login"))
+        token = client.cookies[settings.CSRF_COOKIE_NAME].value
+        for headers in ({}, {"HTTP_X_CSRFTOKEN": "invalid-token"}):
+            with self.subTest(headers=headers):
+                response = client.post(self.url, **headers)
+                self.assertEqual(response.status_code, 403)
+                self.assertIn("CSRF", str(response.data["detail"]))
+                self.assertEqual(list(self.target.starred_by.all()), [self.other_user])
+        allowed = client.post(self.url, HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(allowed.status_code, 200)
+        self.assertTrue(allowed.data["is_starred"])
+
+    def test_response_contains_public_certification_fields_only(self):
+        response = self.client_for("member").post(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data), {
+            "id", "title", "description", "year", "is_highlight",
+            "star_count", "is_starred", "starred_by_names",
+        })
+        self.assertEqual(set(response.data["starred_by_names"].split(", ")), {
+            "existing_star", "star_member",
+        })
+        self.assertNotContains(response, "private-star@example.com")
+
+    def test_repeated_toggles_never_duplicate_a_users_relation(self):
+        client = self.client_for("member")
+        for expected_flag in (True, False, True, False):
+            response = client.post(self.url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data["is_starred"], expected_flag)
+            self.assertEqual(
+                self.target.starred_by.filter(pk=self.users["member"].pk).count(),
+                int(expected_flag),
+            )
+            self.assertEqual(self.target.starred_by.count(), 1 + int(expected_flag))
+
+    def test_list_and_detail_reflect_the_new_star_for_the_current_account(self):
+        client = self.client_for("member")
+        self.assertEqual(client.post(self.url).status_code, 200)
+        detail = client.get(reverse("api:certification-detail", args=[self.target.pk]))
+        listing = client.get(reverse("api:certification-list"), {"starred": "1"})
+        self.assertTrue(detail.data["is_starred"])
+        self.assertEqual(detail.data["star_count"], 2)
+        self.assertEqual([row["id"] for row in listing.data], [self.target.pk])
+        other_viewer = self.client_for("owner").get(
+            reverse("api:certification-detail", args=[self.target.pk]),
+        )
+        self.assertFalse(other_viewer.data["is_starred"])
+        self.assertEqual(other_viewer.data["star_count"], 2)

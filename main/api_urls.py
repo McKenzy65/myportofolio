@@ -11,4 +11,9 @@ urlpatterns = [
         api_views.certification_detail,
         name="certification-detail",
     ),
+    path(
+        "certifications/<int:certification_id>/star/",
+        api_views.certification_star,
+        name="certification-star",
+    ),
 ]
