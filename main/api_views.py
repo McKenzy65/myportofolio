@@ -1,4 +1,5 @@
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
@@ -68,3 +69,30 @@ def certification_list(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def certification_detail(request, certification_id):
+    certification = get_object_or_404(
+        Certification.objects.prefetch_related("starred_by"), pk=certification_id,
+    )
+
+    if request.method in ("GET", "HEAD"):
+        serializer = CertificationSerializer(
+            certification, context={"request": request},
+        )
+        return Response(serializer.data)
+
+    if request.method == "DELETE":
+        certification.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = CertificationSerializer(
+        certification, data=request.data, partial=request.method == "PATCH",
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)

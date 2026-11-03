@@ -296,3 +296,257 @@ class CertificationListAPITests(APITestCase):
         self.assertTrue(response["Content-Type"].startswith("text/html"))
         self.assertContains(response, "Alpha Cloud")
         self.assertContains(response, "<html")
+
+
+class CertificationDetailAPITests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.users = {
+            "member": User.objects.create_user(
+                username="detail_member", email="detail-private@example.com",
+            ),
+            "staff": User.objects.create_user(username="detail_staff", is_staff=True),
+            "editor": User.objects.create_user(username="detail_editor"),
+            "owner": User.objects.create_user(
+                username="detail_owner", is_superuser=True, is_staff=True,
+            ),
+        }
+        cls.users["editor"].groups.add(Group.objects.get_or_create(name="Editor")[0])
+
+    def setUp(self):
+        Certification.objects.all().delete()
+        self.target = Certification.objects.create(
+            title="Target Certification", description="Original description",
+            year=2024, is_highlight=True,
+        )
+        self.other = Certification.objects.create(
+            title="Other Certification", description="Keep this entry", year=2023,
+        )
+        self.target.starred_by.add(self.users["member"], self.users["editor"])
+        self.other.starred_by.add(self.users["owner"])
+        self.url = reverse("api:certification-detail", args=[self.target.pk])
+        self.payload = {
+            "title": "Updated Certification",
+            "description": "Updated description",
+            "year": 2026,
+            "is_highlight": False,
+        }
+
+    def client_for(self, role, enforce_csrf=False):
+        client = APIClient(enforce_csrf_checks=enforce_csrf)
+        if role is not None:
+            client.force_login(self.users[role])
+        return client
+
+    def saved_state(self):
+        return (
+            list(Certification.objects.order_by("pk").values()),
+            list(Certification.starred_by.through.objects.order_by("pk").values()),
+        )
+
+    def csrf_token(self, client):
+        response = client.get(reverse("rest_framework:login"))
+        self.assertEqual(response.status_code, 200)
+        return client.cookies[settings.CSRF_COOKIE_NAME].value
+
+    def test_detail_returns_public_fields_and_session_specific_stars(self):
+        self.assertEqual(self.url, f"/api/v1/certifications/{self.target.pk}/")
+        for role, is_starred in ((None, False), ("member", True), ("owner", False)):
+            with self.subTest(role=role):
+                response = self.client_for(role).get(self.url)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(set(response.data), {
+                    "id", "title", "description", "year", "is_highlight",
+                    "star_count", "is_starred", "starred_by_names",
+                })
+                self.assertEqual(response.data["id"], self.target.pk)
+                self.assertEqual(response.data["title"], self.target.title)
+                self.assertEqual(response.data["star_count"], 2)
+                self.assertEqual(response.data["is_starred"], is_starred)
+                self.assertEqual(
+                    set(response.data["starred_by_names"].split(", ")),
+                    {"detail_member", "detail_editor"},
+                )
+                self.assertNotContains(response, "detail-private@example.com")
+
+    def test_safe_detail_methods_are_public_and_do_not_change_data(self):
+        before = self.saved_state()
+        for role in (None, *self.users):
+            client = self.client_for(role)
+            for method in ("get", "head", "options"):
+                with self.subTest(role=role, method=method):
+                    self.assertEqual(getattr(client, method)(self.url).status_code, 200)
+                    self.assertEqual(self.saved_state(), before)
+
+    def test_missing_objects_and_malformed_identifiers_return_404(self):
+        before = self.saved_state()
+        missing_url = reverse("api:certification-detail", args=[self.other.pk + 1000])
+        self.assertEqual(self.client.get(missing_url).status_code, 404)
+        owner = self.client_for("owner")
+        for method in ("put", "patch", "delete"):
+            with self.subTest(method=method):
+                response = getattr(owner, method)(missing_url, self.payload, format="json")
+                self.assertEqual(response.status_code, 404)
+        for identifier in ("abc", "-1", "1.5"):
+            with self.subTest(identifier=identifier):
+                self.assertEqual(
+                    self.client.get(f"/api/v1/certifications/{identifier}/").status_code, 404,
+                )
+        self.assertEqual(self.saved_state(), before)
+
+    def test_owner_and_editor_can_update_using_put_and_patch(self):
+        for role in ("owner", "editor"):
+            client = self.client_for(role)
+            for method in ("put", "patch"):
+                with self.subTest(role=role, method=method):
+                    payload = {**self.payload, "title": f"<b>{role} {method}</b>"}
+                    response = getattr(client, method)(self.url, payload, format="json")
+                    self.assertEqual(response.status_code, 200)
+                    self.target.refresh_from_db()
+                    self.assertEqual(self.target.title, f"{role} {method}")
+                    self.assertEqual(self.target.description, self.payload["description"])
+                    self.assertEqual(self.target.year, 2026)
+                    self.assertFalse(self.target.is_highlight)
+                    self.assertEqual(response.data["id"], self.target.pk)
+                    self.assertEqual(response.data["star_count"], 2)
+                    self.assertEqual(response.data["is_starred"], role == "editor")
+                    self.assertEqual(Certification.objects.count(), 2)
+
+    def test_other_roles_cannot_update_even_with_valid_payloads(self):
+        before = self.saved_state()
+        for role in (None, "member", "staff"):
+            client = self.client_for(role)
+            for method in ("put", "patch"):
+                with self.subTest(role=role, method=method):
+                    response = getattr(client, method)(self.url, self.payload, format="json")
+                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(self.saved_state(), before)
+
+    def test_owner_delete_removes_only_target_and_its_star_relations(self):
+        other_before = Certification.objects.values().get(pk=self.other.pk)
+        response = self.client_for("owner").delete(self.url)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertEqual(list(Certification.objects.values_list("pk", flat=True)), [self.other.pk])
+        self.assertEqual(Certification.objects.values().get(pk=self.other.pk), other_before)
+        self.assertEqual(
+            list(Certification.starred_by.through.objects.values_list(
+                "certification_id", "user_id",
+            )),
+            [(self.other.pk, self.users["owner"].pk)],
+        )
+        self.assertTrue(User.objects.filter(pk=self.users["member"].pk).exists())
+
+    def test_editor_and_other_nonowners_cannot_delete(self):
+        before = self.saved_state()
+        for role in (None, "member", "staff", "editor"):
+            with self.subTest(role=role):
+                self.assertEqual(self.client_for(role).delete(self.url).status_code, 403)
+                self.assertEqual(self.saved_state(), before)
+
+    def test_put_requires_title_description_and_year_without_partial_save(self):
+        before = self.saved_state()
+        client = self.client_for("owner")
+        for field in ("title", "description", "year"):
+            with self.subTest(field=field):
+                payload = {key: value for key, value in self.payload.items() if key != field}
+                response = client.put(self.url, payload, format="json")
+                self.assertEqual(response.status_code, 400)
+                self.assertIn(field, response.data)
+                self.assertEqual(self.saved_state(), before)
+
+    def test_patch_can_change_only_title_and_preserves_omitted_fields(self):
+        response = self.client_for("editor").patch(
+            self.url, {"title": "  <b>Renamed</b>  "}, format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.title, "Renamed")
+        self.assertEqual(self.target.description, "Original description")
+        self.assertEqual(self.target.year, 2024)
+        self.assertTrue(self.target.is_highlight)
+        self.assertEqual(self.target.starred_by.count(), 2)
+        self.assertEqual(response.data["description"], "Original description")
+
+    def test_invalid_updates_return_field_errors_without_mutation(self):
+        before = self.saved_state()
+        client = self.client_for("owner")
+        for method in ("put", "patch"):
+            for field, value in (
+                ("title", "<b></b>"), ("description", "<p> </p>"),
+                ("title", "x" * 256), ("year", -1), ("year", "not a year"),
+            ):
+                with self.subTest(method=method, field=field, value=value):
+                    response = getattr(client, method)(
+                        self.url, {**self.payload, field: value}, format="json",
+                    )
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn(field, response.data)
+                    self.assertEqual(self.saved_state(), before)
+
+    def test_updates_cannot_change_identity_or_forge_star_memberships(self):
+        other_before = Certification.objects.values().get(pk=self.other.pk)
+        client = self.client_for("editor")
+        payload = {
+            **self.payload, "id": self.other.pk, "star_count": 100,
+            "is_starred": False, "starred_by_names": "forged",
+            "starred_by": [self.users["owner"].pk],
+        }
+        for method in ("put", "patch"):
+            with self.subTest(method=method):
+                response = getattr(client, method)(self.url, payload, format="json")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.data["id"], self.target.pk)
+                self.assertEqual(response.data["star_count"], 2)
+                self.assertTrue(response.data["is_starred"])
+                self.assertEqual(set(self.target.starred_by.values_list("pk", flat=True)), {
+                    self.users["member"].pk, self.users["editor"].pk,
+                })
+                self.assertEqual(Certification.objects.values().get(pk=self.other.pk), other_before)
+                self.assertEqual(Certification.objects.count(), 2)
+
+    def test_session_updates_require_csrf_for_owner_and_editor(self):
+        for role in ("owner", "editor"):
+            client = self.client_for(role, enforce_csrf=True)
+            token = self.csrf_token(client)
+            for method in ("put", "patch"):
+                with self.subTest(role=role, method=method):
+                    before = self.saved_state()
+                    denied = getattr(client, method)(self.url, self.payload, format="json")
+                    self.assertEqual(denied.status_code, 403)
+                    self.assertIn("CSRF", str(denied.data["detail"]))
+                    self.assertEqual(self.saved_state(), before)
+                    allowed = getattr(client, method)(
+                        self.url, self.payload, format="json", HTTP_X_CSRFTOKEN=token,
+                    )
+                    self.assertEqual(allowed.status_code, 200)
+
+    def test_session_delete_requires_csrf_even_for_owner(self):
+        client = self.client_for("owner", enforce_csrf=True)
+        token = self.csrf_token(client)
+        before = self.saved_state()
+        denied = client.delete(self.url)
+        self.assertEqual(denied.status_code, 403)
+        self.assertIn("CSRF", str(denied.data["detail"]))
+        self.assertEqual(self.saved_state(), before)
+        allowed = client.delete(self.url, HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(allowed.status_code, 204)
+        self.assertFalse(Certification.objects.filter(pk=self.target.pk).exists())
+
+    def test_malformed_json_updates_return_400_without_mutation(self):
+        before = self.saved_state()
+        client = self.client_for("owner")
+        for method in ("put", "patch"):
+            with self.subTest(method=method):
+                response = getattr(client, method)(
+                    self.url, '{"title":', content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(self.saved_state(), before)
+
+    def test_post_is_not_supported_on_detail_endpoint(self):
+        before = self.saved_state()
+        response = self.client_for("owner").post(self.url, self.payload, format="json")
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(self.saved_state(), before)

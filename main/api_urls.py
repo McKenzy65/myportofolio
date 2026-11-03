@@ -6,4 +6,9 @@ app_name = "api"
 
 urlpatterns = [
     path("certifications/", api_views.certification_list, name="certification-list"),
+    path(
+        "certifications/<int:certification_id>/",
+        api_views.certification_detail,
+        name="certification-detail",
+    ),
 ]
