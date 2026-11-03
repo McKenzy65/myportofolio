@@ -6,6 +6,7 @@
 {% endblock meta %}
 
 {% block content %}
+<div id="certification-csrf" hidden>{% csrf_token %}</div>
 <main>
     <section class="section certs" id="certs" aria-labelledby="certs-title">
         <div class="container">
@@ -88,14 +89,16 @@
 
 <script>
     // Konfigurasi
-    const BASE_CERTIFICATIONS_ENDPOINT = "{% url 'main:get_certifications_json' %}";
-    const CREATE_CERTIFICATION_ENDPOINT = "{% url 'main:create_certification_ajax' %}";
+    const BASE_CERTIFICATIONS_ENDPOINT = "{% url 'api:certification-list' %}";
     const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
     const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
     const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
     const SEARCH_DEBOUNCE_DELAY = 300;
     let certificationsAbortController;
+    let yearOptionsAbortController;
     let searchDebounceTimer;
+    let isCreatingCertification = false;
+    const pendingCertificationIds = new Set();
 
     // Elemen DOM
     const loadingState = document.getElementById('loading');
@@ -131,16 +134,17 @@
 
     // Membuat elemen kartu sertifikasi
     function buildCertificationCardElement(item) {
-        const cert = item.fields;
-        const certId = encodeURIComponent(String(item.pk));
+        const cert = item;
+        const certId = encodeURIComponent(String(item.id));
 
         const articleElement = document.createElement('article');
         articleElement.className = 'cert' + (cert.is_highlight ? ' cert--highlight' : '');
+        articleElement.dataset.certificationId = String(item.id);
 
         // ID 0 hanya penanda, diganti dengan ID asli dari data JSON
         const editUrl = "{% url 'main:edit_certification' 0 %}".replace('/0/', `/${certId}/`);
-        const deleteUrl = "{% url 'main:delete_certification' 0 %}".replace('/0/', `/${certId}/`);
-        const starUrl = "{% url 'main:toggle_star' 0 %}".replace('/0/', `/${certId}/`);
+        const deleteUrl = "{% url 'api:certification-detail' 0 %}".replace('/0/', `/${certId}/`);
+        const starUrl = "{% url 'api:certification-star' 0 %}".replace('/0/', `/${certId}/`);
 
         const isStarredClass = cert.is_starred ? ' is-starred' : '';
         const starText = cert.is_starred ? 'Unstar' : 'Star';
@@ -153,10 +157,9 @@
             : '';
 
         const deleteHtml = IS_SUPERUSER
-            ? `<form method="post" action="${escapeHtml(deleteUrl)}" class="star-form">
-                    {% csrf_token %}
-                    <button type="submit" class="button button-danger"
-                            onclick="return confirm('Yakin ingin menghapus sertifikasi ini?');">Hapus</button>
+            ? `<form method="post" action="${escapeHtml(deleteUrl)}" class="star-form cert-delete-form"
+                     data-certification-title="${escapeHtml(cert.title)}">
+                    <button type="submit" class="button button-danger">Hapus</button>
                </form>`
             : '';
 
@@ -166,7 +169,6 @@
 
         const starHtml = IS_AUTHENTICATED
             ? `<form method="post" action="${escapeHtml(starUrl)}" class="star-form cert-star-form">
-                    {% csrf_token %}
                     <button type="submit" class="button button-star${isStarredClass}"
                             aria-pressed="${cert.is_starred ? 'true' : 'false'}" title="${starTitle}">
                         <span aria-hidden="true">★</span> ${starText}
@@ -183,6 +185,7 @@
             <p>${escapeHtml(cert.description)}</p>
             <div class="cert-card-footer">${starHtml}${actionsHtml}</div>
         `;
+        setCardPending(articleElement, pendingCertificationIds.has(String(item.id)));
         return articleElement;
     }
 
@@ -204,13 +207,15 @@
             const url = `${BASE_CERTIFICATIONS_ENDPOINT}?${params}`;
 
             const response = await fetch(url, {
+                credentials: 'same-origin',
                 headers: { 'Accept': 'application/json' },
                 signal: controller.signal,
             });
             if (!response.ok) throw new Error('Failed to fetch data');
 
             const certificationData = await response.json();
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted || certificationsAbortController !== controller) return;
+            if (!Array.isArray(certificationData)) throw new Error('Invalid certification list');
             resultCount.textContent = `${certificationData.length} sertifikasi ditampilkan`;
 
             if (certificationData.length === 0) {
@@ -226,7 +231,7 @@
                 displayPageSection({ showGrid: true });
             }
         } catch (error) {
-            if (error.name === 'AbortError') return;
+            if (error.name === 'AbortError' || controller.signal.aborted || certificationsAbortController !== controller) return;
             console.error('Error loading certifications:', error);
             displayPageSection({ showError: true });
             resultCount.textContent = 'Data belum dapat dimuat.';
@@ -267,30 +272,46 @@
     });
     document.getElementById('retry-load').addEventListener('click', searchCertifications);
 
+    function setCardPending(card, pending) {
+        card.querySelectorAll('button').forEach(button => {
+            button.disabled = pending;
+            if (pending) button.setAttribute('aria-busy', 'true');
+            else button.removeAttribute('aria-busy');
+        });
+    }
+
+    function setCertificationPending(id, pending) {
+        if (pending) pendingCertificationIds.add(id);
+        else pendingCertificationIds.delete(id);
+        gridContainer.querySelectorAll('[data-certification-id]').forEach(card => {
+            if (card.dataset.certificationId === id) setCardPending(card, pending);
+        });
+    }
+
     // Delegasi event: kartu selalu dibuat ulang setelah pencarian atau filter berubah.
     gridContainer.addEventListener('submit', async function (event) {
         const form = event.target;
-        if (!form.classList.contains('cert-star-form')) return;
+        const isDelete = form.classList.contains('cert-delete-form');
+        if (!isDelete && !form.classList.contains('cert-star-form')) return;
         event.preventDefault();
-        const button = form.querySelector('button');
-        if (button.disabled) return;
-        button.disabled = true;
-        button.setAttribute('aria-busy', 'true');
+        const id = form.closest('[data-certification-id]').dataset.certificationId;
+        if (pendingCertificationIds.has(id)) return;
+        if (isDelete && !window.confirm(`Yakin ingin menghapus "${form.dataset.certificationTitle}"?`)) return;
+        setCertificationPending(id, true);
         try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                body: new FormData(form),
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(result.message || `Gagal mengubah star (status ${response.status}).`);
-            showToast('Favorit diperbarui', result.message, 'success');
+            const result = await writeCertification(form.action, isDelete ? 'DELETE' : 'POST', isDelete ? undefined : {});
+            if (isDelete) {
+                showToast('Berhasil', 'Sertifikasi berhasil dihapus.', 'success');
+                await refreshYearOptions();
+            } else {
+                showToast('Favorit diperbarui', result.is_starred
+                    ? 'Sertifikasi ditambahkan ke favorit.' : 'Star dibatalkan.', 'success');
+            }
             await fetchCertifications(searchInput.value.trim());
         } catch (error) {
-            showToast('Gagal mengubah star', error.message, 'error');
+            showToast(isDelete ? 'Gagal menghapus sertifikasi' : 'Gagal mengubah star', error.message, 'error');
         } finally {
-            button.disabled = false;
-            button.removeAttribute('aria-busy');
+            setCertificationPending(id, false);
         }
     });
 
@@ -314,42 +335,107 @@
         return cookieValue;
     }
 
+    function apiErrorMessage(data, status) {
+        const fieldLabels = {
+            title: 'Judul', description: 'Deskripsi', year: 'Tahun', is_highlight: 'Unggulan',
+        };
+        function messages(value) {
+            if (typeof value === 'string') return [value];
+            if (Array.isArray(value)) return value.flatMap(messages);
+            if (value && typeof value === 'object') return Object.values(value).flatMap(messages);
+            return [];
+        }
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+            const errors = Object.entries(data).flatMap(([field, value]) =>
+                messages(value).map(message => fieldLabels[field] ? `${fieldLabels[field]}: ${message}` : message)
+            );
+            if (errors.length) return errors.join(' ');
+        }
+        return messages(data).join(' ') || `Permintaan gagal (status ${status}).`;
+    }
+
+    // Semua perubahan memakai sesi login, JSON, dan CSRF; tidak ada pengulangan otomatis.
+    async function writeCertification(url, method, data) {
+        const csrfToken = getCookie('csrftoken')
+            || document.querySelector('#certification-csrf [name="csrfmiddlewaretoken"]').value;
+        let response;
+        try {
+            response = await fetch(url, {
+                method,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: data === undefined ? undefined : JSON.stringify(data),
+            });
+        } catch (error) {
+            throw new Error('Hasil perubahan belum dapat dipastikan. Muat ulang daftar sebelum mencoba lagi.');
+        }
+        if (response.status === 204) return null;
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(apiErrorMessage(result, response.status));
+        if (!result || typeof result !== 'object') throw new Error('Respons server tidak valid. Muat ulang daftar untuk memeriksa hasil.');
+        return result;
+    }
+
+    function updateYearOptions(years) {
+        const selectedYear = yearFilter.value;
+        const values = [...new Set(years.map(String))].filter(Boolean).sort((a, b) => Number(b) - Number(a));
+        yearFilter.replaceChildren(new Option('Semua tahun', ''), ...values.map(year => new Option(year, year)));
+        if (values.includes(selectedYear)) yearFilter.value = selectedYear;
+    }
+
+    async function refreshYearOptions() {
+        if (yearOptionsAbortController) yearOptionsAbortController.abort();
+        const controller = new AbortController();
+        yearOptionsAbortController = controller;
+        try {
+            const response = await fetch(BASE_CERTIFICATIONS_ENDPOINT, {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal,
+            });
+            if (!response.ok) throw new Error('Failed to fetch years');
+            const data = await response.json();
+            if (controller.signal.aborted || yearOptionsAbortController !== controller) return;
+            if (!Array.isArray(data)) throw new Error('Invalid certification list');
+            updateYearOptions(data.map(certification => certification.year));
+        } catch (error) {
+            if (error.name === 'AbortError' || controller.signal.aborted || yearOptionsAbortController !== controller) return;
+            showToast('Filter tahun belum diperbarui', 'Perubahan sudah tersimpan. Muat ulang halaman untuk memperbarui pilihan tahun.', 'error');
+        }
+    }
+
     // Mengirim form tambah sertifikasi tanpa reload halaman
     async function addCertification(event) {
         event.preventDefault();
-
+        if (isCreatingCertification) return;
+        isCreatingCertification = true;
         const submitButton = certificationForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
+        submitButton.setAttribute('aria-busy', 'true');
 
         try {
-            const response = await fetch(CREATE_CERTIFICATION_ENDPOINT, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: new FormData(certificationForm),
+            const result = await writeCertification(BASE_CERTIFICATIONS_ENDPOINT, 'POST', {
+                title: certificationForm.elements.title.value,
+                description: certificationForm.elements.description.value,
+                year: certificationForm.elements.year.value,
+                is_highlight: certificationForm.elements.is_highlight.checked,
             });
-            const result = await response.json().catch(() => ({}));
-
-            if (response.ok) {
-                // Tahun baru langsung tersedia di filter tanpa perlu reload halaman.
-                const addedYear = certificationForm.elements.year.value;
-                if (![...yearFilter.options].some(option => option.value === addedYear)) {
-                    yearFilter.add(new Option(addedYear, addedYear));
-                }
-                certificationForm.reset();
-                closeCertificationModal();
-                showToast('Berhasil', 'Sertifikasi baru berhasil ditambahkan!', 'success');
-                fetchCertifications(searchInput.value.trim());
-            } else {
-                const errorMessages = result.errors
-                    ? Object.values(result.errors).flat().map(error => error.message)
-                    : [result.message || `Terjadi kesalahan (status ${response.status}).`];
-                showToast('Gagal menambahkan sertifikasi', errorMessages.join(' '), 'error');
-            }
+            updateYearOptions([...yearFilter.options].map(option => option.value).concat(result.year));
+            certificationForm.reset();
+            closeCertificationModal();
+            showToast('Berhasil', 'Sertifikasi baru berhasil ditambahkan!', 'success');
+            await refreshYearOptions();
+            await fetchCertifications(searchInput.value.trim());
         } catch (error) {
-            console.error('Error adding certification:', error);
-            showToast('Gagal menambahkan sertifikasi', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+            showToast('Gagal menambahkan sertifikasi', error.message, 'error');
         } finally {
+            isCreatingCertification = false;
             submitButton.disabled = false;
+            submitButton.removeAttribute('aria-busy');
         }
     }
 
