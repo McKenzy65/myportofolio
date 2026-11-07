@@ -86,6 +86,9 @@
 {% if user.is_superuser %}
     {% include "components/certification_form_modal.html" %}
 {% endif %}
+{% if user.is_superuser or is_editor %}
+    {% include "components/certification_edit_modal.html" %}
+{% endif %}
 
 <script>
     // Konfigurasi
@@ -142,7 +145,7 @@
         articleElement.dataset.certificationId = String(item.id);
 
         // ID 0 hanya penanda, diganti dengan ID asli dari data JSON
-        const editUrl = "{% url 'main:edit_certification' 0 %}".replace('/0/', `/${certId}/`);
+        const editUrl = "{% url 'api:certification-detail' 0 %}".replace('/0/', `/${certId}/`);
         const deleteUrl = "{% url 'api:certification-detail' 0 %}".replace('/0/', `/${certId}/`);
         const starUrl = "{% url 'api:certification-star' 0 %}".replace('/0/', `/${certId}/`);
 
@@ -153,7 +156,7 @@
             : 'Jadilah yang pertama memberi star';
 
         const editHtml = (IS_SUPERUSER || IS_EDITOR)
-            ? `<a href="${escapeHtml(editUrl)}" class="button button-secondary">Edit</a>`
+            ? `<button type="button" data-detail-url="${escapeHtml(editUrl)}" class="button button-secondary cert-edit-button">Edit</button>`
             : '';
 
         const deleteHtml = IS_SUPERUSER
@@ -317,6 +320,93 @@
 
     function closeCertificationModal() {
         document.getElementById('add-certification-modal').hidePopover();
+    }
+
+    // Detail dibaca saat modal dibuka agar edit memakai data terbaru dari API.
+    const editModal = document.getElementById('edit-certification-modal');
+    const editForm = document.getElementById('edit-certification-form');
+    let editLoadController;
+    let editTrigger;
+    let isSavingCertification = false;
+    if (editModal) {
+        const editStatus = document.getElementById('edit-certification-status');
+        const editFields = editForm.querySelector('fieldset');
+        gridContainer.addEventListener('click', async event => {
+            const button = event.target.closest('.cert-edit-button');
+            if (!button || isSavingCertification) return;
+            const id = button.closest('[data-certification-id]').dataset.certificationId;
+            if (pendingCertificationIds.has(id)) return;
+            if (editLoadController) editLoadController.abort();
+            const controller = new AbortController();
+            editLoadController = controller;
+            editTrigger = button;
+            editForm.reset();
+            delete editForm.dataset.certificationId;
+            editFields.disabled = true;
+            editStatus.textContent = 'Memuat data sertifikasi...';
+            editModal.showPopover();
+            editModal.querySelector('.certification-form-modal__content').scrollTop = 0;
+            try {
+                const response = await fetch(button.dataset.detailUrl, {
+                    credentials: 'same-origin', headers: { 'Accept': 'application/json' },
+                    signal: controller.signal,
+                });
+                const data = await response.json().catch(() => null);
+                if (controller.signal.aborted || editLoadController !== controller) return;
+                if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+                if (!data || String(data.id) !== id) throw new Error('Respons sertifikasi tidak valid.');
+                editForm.elements.title.value = data.title;
+                editForm.elements.description.value = data.description;
+                editForm.elements.year.value = data.year;
+                editForm.elements.is_highlight.checked = data.is_highlight;
+                editForm.dataset.certificationId = id;
+                editForm.dataset.detailUrl = button.dataset.detailUrl;
+                editFields.disabled = false;
+                editStatus.textContent = '';
+                editForm.elements.title.focus();
+            } catch (error) {
+                if (controller.signal.aborted || editLoadController !== controller) return;
+                editStatus.textContent = 'Data belum dapat dimuat. Tutup form lalu coba lagi.';
+                showToast('Gagal membuka sertifikasi', error.message, 'error');
+            }
+        });
+        editModal.addEventListener('toggle', event => {
+            if (event.newState === 'closed') {
+                if (editLoadController) editLoadController.abort();
+                if (editTrigger && editTrigger.isConnected) editTrigger.focus();
+            }
+        });
+        editForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            const id = editForm.dataset.certificationId;
+            if (!id || isSavingCertification || pendingCertificationIds.has(id)) return;
+            const payload = {
+                title: editForm.elements.title.value,
+                description: editForm.elements.description.value,
+                year: editForm.elements.year.value,
+                is_highlight: editForm.elements.is_highlight.checked,
+            };
+            isSavingCertification = true;
+            setCertificationPending(id, true);
+            editFields.disabled = true;
+            editForm.setAttribute('aria-busy', 'true');
+            editStatus.textContent = 'Menyimpan perubahan...';
+            try {
+                await writeCertification(editForm.dataset.detailUrl, 'PATCH', payload);
+                editModal.hidePopover();
+                showToast('Berhasil', 'Sertifikasi berhasil diperbarui.', 'success');
+                await refreshYearOptions();
+                await fetchCertifications(searchInput.value.trim());
+            } catch (error) {
+                editStatus.textContent = error.message;
+                showToast('Gagal mengubah sertifikasi', error.message, 'error');
+            } finally {
+                isSavingCertification = false;
+                setCertificationPending(id, false);
+                editFields.disabled = false;
+                editForm.removeAttribute('aria-busy');
+            }
+        });
     }
 
     // Membaca cookie, dipakai untuk token CSRF
