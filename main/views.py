@@ -87,6 +87,10 @@ def show_main(request):
             "technology, and whatever seems worth building."
         ),
         "last_login": last_login,
+        "is_editor": (
+            request.user.is_authenticated
+            and request.user.groups.filter(name="Editor").exists()
+        ),
     }
     return render(request, "index.html", context)
 

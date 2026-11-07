@@ -4,6 +4,8 @@
 {% block meta %}
 <title>{{ name }} - Portofolio</title>
 <meta name="description" content="Portofolio {{ name }}, mahasiswa {{ study_program }} Fasilkom UI.">
+<link rel="stylesheet" href="{% static 'css/experiences.css' %}">
+<script src="{% static 'js/experiences.js' %}" defer></script>
 {% endblock meta %}
 
 {% block content %}
@@ -202,31 +204,6 @@
             </div>
         </section>
 
-       <section class="section experience" id="experience" aria-labelledby="experience-title">
-    <div class="container">
-        <div class="section-head">
-            <h2 id="experience-title">Pengalaman</h2>
-        </div>
-
-        <ul class="exp-list">
-            {% for exp in experience_list %}
-            <li class="exp-item">
-                <div class="exp-meta">
-                    <span class="exp-date">{{ exp.started_at|date:"Y" }}</span>
-            <span class="exp-org">{{ exp.category|title }}</span>
-                </div>
-                <div class="exp-body">
-                    <h3>{{ exp.title }}</h3>
-                    <p>{{ exp.description }}</p>
-                </div>
-            </li>
-            {% empty %}
-            <li class="exp-item">
-                <p>Belum ada data pengalaman di database.</p>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-</section>
+        {% include 'components/experience_section.html' %}
     </main>
 {% endblock content %}

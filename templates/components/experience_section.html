@@ -1,0 +1,92 @@
+<section class="section experience" id="experience" aria-labelledby="experience-title"
+         data-list-url="{% url 'api:experience-list' %}"
+         data-login-url="{% url 'main:login' %}"
+         data-authenticated="{{ user.is_authenticated|yesno:'true,false' }}"
+         data-owner="{{ user.is_superuser|yesno:'true,false' }}"
+         data-editor="{{ is_editor|yesno:'true,false' }}">
+    <div class="container">
+        <div id="experience-csrf" hidden>{% csrf_token %}</div>
+        <div class="section-head">
+            <div>
+                <span class="experience-eyebrow">BELAJAR &amp; BERKONTRIBUSI</span>
+                <h2 id="experience-title">Pengalaman</h2>
+            </div>
+            <p>Perjalanan belajar dan bekerja, dari riset sampai kontribusi di komunitas.</p>
+        </div>
+
+        <div class="experience-toolbar">
+            <form id="experience-search-form" class="experience-search" role="search">
+                <label for="experience-search">Cari pengalaman</label>
+                <div class="experience-search-row">
+                    <input id="experience-search" name="title" type="search" placeholder="Cari berdasarkan judul...">
+                    <button type="submit" class="button">Cari</button>
+                </div>
+            </form>
+            <label class="experience-filter" for="experience-category">Kategori
+                <select id="experience-category">
+                    <option value="">Semua kategori</option>
+                    <option value="internship">Internship</option>
+                    <option value="research">Research</option>
+                    <option value="volunteer">Volunteer</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="full-time">Full-Time</option>
+                    <option value="freelance">Freelance</option>
+                </select>
+            </label>
+            <button id="experience-reset" type="button" class="button button-secondary">Reset</button>
+            {% if user.is_superuser %}
+            <button id="experience-add" type="button" class="button">+ Tambah pengalaman</button>
+            {% endif %}
+        </div>
+        <p id="experience-status" class="experience-status" role="status" aria-live="polite">Memuat pengalaman...</p>
+        <ul id="experience-list" class="exp-list" aria-label="Daftar pengalaman" aria-busy="true"></ul>
+        <button id="experience-retry" type="button" class="button button-secondary" hidden>Coba lagi</button>
+        <noscript><p>Aktifkan JavaScript untuk memuat dan mengelola pengalaman.</p></noscript>
+
+        {% if user.is_superuser or is_editor %}
+        <dialog id="experience-dialog" class="experience-dialog" aria-labelledby="experience-dialog-title">
+            <div class="experience-dialog-head">
+                <h2 id="experience-dialog-title">Tambah pengalaman</h2>
+                <button type="button" class="experience-close" data-close-experience aria-label="Tutup form pengalaman">&times;</button>
+            </div>
+            <p id="experience-form-status" class="experience-status" role="status"></p>
+            <form id="experience-form">
+                <fieldset id="experience-form-fields">
+                    <div class="form-group">
+                        <label for="experience-title-input">Judul</label>
+                        <input id="experience-title-input" name="title" type="text" maxlength="255" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="experience-description">Deskripsi</label>
+                        <textarea id="experience-description" name="description" rows="5" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="experience-category-input">Kategori</label>
+                        <select id="experience-category-input" name="category" required>
+                            <option value="internship">Internship</option>
+                            <option value="research">Research</option>
+                            <option value="volunteer">Volunteer</option>
+                            <option value="part-time">Part-Time</option>
+                            <option value="full-time" selected>Full-Time</option>
+                            <option value="freelance">Freelance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="experience-thumbnail">URL gambar (opsional)</label>
+                        <input id="experience-thumbnail" name="thumbnail" type="url" placeholder="https://..." maxlength="200">
+                    </div>
+                    <div class="form-group">
+                        <label for="experience-ended-at">Tanggal selesai (opsional)</label>
+                        <input id="experience-ended-at" name="ended_at" type="datetime-local" step="1" aria-describedby="experience-date-help">
+                        <p id="experience-date-help" class="experience-help">Kosongkan jika pengalaman masih berlangsung.</p>
+                    </div>
+                    <div class="experience-dialog-actions">
+                        <button type="button" class="button button-secondary" data-close-experience>Batal</button>
+                        <button id="experience-save" type="submit" class="button">Simpan pengalaman</button>
+                    </div>
+                </fieldset>
+            </form>
+        </dialog>
+        {% endif %}
+    </div>
+</section>
