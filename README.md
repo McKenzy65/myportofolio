@@ -9,13 +9,14 @@ Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tuto
 ## Fitur
 
 - **Halaman utama (`/`)**: About Me, Skills, Pendidikan, Proyek (filter kategori tanpa JavaScript), dan Pengalaman yang diambil dari database.
-- **Sertifikasi (`/certifications/`)**: daftar dimuat melalui AJAX, pencarian judul dengan debounce 300 ms, serta kondisi loading, kosong, dan error. Pemilik dapat menambah data lewat modal tanpa reload; edit memakai halaman form dan hapus memakai konfirmasi.
+- **Sertifikasi (`/certifications/`)**: daftar, pencarian dengan debounce 300 ms, tambah, edit, star, dan hapus memakai API DRF tanpa reload. Tersedia kondisi loading, kosong, error, modal, dan konfirmasi hapus.
+- **Pengalaman (`/#experience`)**: model `Experience` yang sudah ada dilengkapi API DRF, pencarian judul, filter kategori, modal tambah/edit, dan star sesuai akun yang sedang login.
 - **Template dasar (`templates/base.html`)**: header, footer, dan kerangka HTML dipakai bersama lewat `{% extends %}`.
 - **Data delivery JSON**: data sertifikasi dan pengalaman tersedia sebagai JSON.
 - **Flash message** setelah tambah, ubah, atau hapus data, dan **mode gelap/terang** (`static/js/theme.js`).
 - **Toast** untuk hasil penambahan AJAX, kesalahan validasi, dan kegagalan memuat daftar.
 - **Hak akses**: semua pengunjung dapat membaca; pengguna login dapat memberi/membatalkan star; grup `Editor` dapat mengedit; superuser dapat menambah, mengedit, dan menghapus.
-- **Perlindungan input**: POST dilindungi CSRF, teks dibersihkan dengan `strip_tags` pada `ModelForm`, dan nilai dari JSON di-escape sebelum masuk ke HTML.
+- **Perlindungan input**: permintaan yang mengubah data memakai session dan CSRF, teks dibersihkan dengan `strip_tags` pada form/serializer, dan nilai dari JSON ditampilkan lewat escaping atau `textContent`.
 - **Eksplorasi sertifikasi**: filter tahun, unggulan, dan favorit pribadi dapat digabungkan dengan pencarian; urutkan terbaru, terlama, judul, atau star terbanyak. Jumlah hasil, reset filter, dan tombol coba lagi membantu menemukan data.
 - **Star tanpa reload**: pengguna login dapat memberi/membatalkan star lewat Fetch API; daftar diperbarui sambil mempertahankan pencarian dan filter.
 - **Tampilan akun**: login dan registrasi memakai layout dua panel di desktop dan satu kolom di mobile, field konsisten dengan tema, tombol lihat/sembunyikan kata sandi, serta pesan validasi di dekat field. Kedua halaman menggunakan komponen form bersama.
@@ -24,6 +25,13 @@ Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tuto
 
 | URL | Method | Fungsi |
 |---|---|---|
+| `/api/v1/certifications/` | GET, POST | Daftar/tambah sertifikasi; filter `title`, `year`, `highlight=1`, `starred=1`, dan `sort=newest/oldest/title/popular` |
+| `/api/v1/certifications/<int:id>/` | GET, PUT, PATCH, DELETE | Detail, ubah, dan hapus sertifikasi |
+| `/api/v1/certifications/<int:id>/star/` | POST | Toggle star sertifikasi untuk `request.user` |
+| `/api/v1/experiences/` | GET, POST | Daftar/tambah pengalaman; filter `title` dan `category` |
+| `/api/v1/experiences/<uuid:id>/` | GET, PUT, PATCH, DELETE | Detail, ubah, dan hapus pengalaman |
+| `/api/v1/experiences/<uuid:id>/star/` | POST | Toggle star pengalaman untuk `request.user` |
+| `/api-auth/login/` | GET, POST | Login session untuk Browsable API |
 | `/` | GET | Halaman utama |
 | `/certifications/` | GET | Daftar sertifikasi, mendukung `?title=` |
 | `/certifications/add/` | GET, POST | Form tambah sertifikasi |
@@ -37,19 +45,25 @@ Dibangun dengan Django (MVT), dikembangkan bertahap setiap minggu mengikuti tuto
 | `/login/` | GET, POST | Login pengguna |
 | `/logout/` | GET | Logout pengguna |
 
+Endpoint `/api/v1/` mengembalikan objek datar dengan `id`, field model yang dipilih, `star_count`, dan `is_starred`. Endpoint JSON lama `/api/certifications/` dan `/api/experiences/` dipertahankan untuk kompatibilitas; halaman memakai API DRF baru.
+
 ## Menjalankan proyek
 
-```bash
+```powershell
 git clone https://github.com/McKenzy65/myportofolio.git
 cd myportofolio
 python -m venv env
-env\Scripts\activate            # Windows. macOS/Linux: source env/bin/activate
-pip install -r requirements.txt
+.\env\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
 
-Buka http://localhost:8000. Untuk menjalankan unit test: `python manage.py test`.
+Pada macOS/Linux, aktivasi environment memakai `source env/bin/activate`. Jalankan perintah dari folder yang berisi `manage.py`. Jika aktivasi PowerShell dibatasi, gunakan `env\Scripts\python.exe` sebagai pengganti `python` tanpa mengubah execution policy.
+
+Buka http://localhost:8000. Untuk unit test jalankan `python manage.py test main`, agar skrip Selenium `test_e2e.py` di root tidak ikut dimuat. Dependency DRF dicatat di `requirements.txt`. Setelah menarik perubahan model, jalankan `python manage.py migrate` sebelum menyalakan server.
+
+Untuk mencoba empat peran, buat pemilik lewat `python manage.py createsuperuser`; buat akun biasa lewat `/register/`, lalu tambahkan akun Editor ke Django Group bernama tepat `Editor` melalui admin. `is_staff` saja tidak memberi hak mengelola data portofolio.
 
 Pengembangan lokal tidak memerlukan berkas `.env`: secara bawaan `PRODUCTION=False` sehingga memakai SQLite.
 Untuk produksi (PostgreSQL) atur `PRODUCTION=True` beserta `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, dan `SCHEMA` lewat environment variable.
@@ -62,7 +76,14 @@ main/
     forms.py        # CertificationForm (ModelForm)
     views.py        # view halaman, form, dan JSON
     urls.py         # routing aplikasi (namespace "main")
+    serializers.py  # CertificationSerializer dan ExperienceSerializer
+    permissions.py  # aturan akses pengunjung, pengguna, Editor, pemilik
+    api_views.py    # function-based view DRF dan SessionAuthentication
+    api_urls.py     # endpoint /api/v1/, namespace "api"
     tests.py        # unit test
+    tests_api*.py   # pengujian API sertifikasi dan session/CSRF
+    tests_experience_api.py  # pengujian API pengalaman
+    tests_assignment6.py     # regresi halaman, CSRF, dan jalur lama
     migrations/
 portofolio/         # konfigurasi proyek (settings.py, urls.py)
 templates/
@@ -72,11 +93,15 @@ templates/
     certification_form.html   # dipakai untuk tambah dan ubah
     components/certification_delete_modal.html
     components/certification_form_modal.html
+    components/certification_edit_modal.html
+    components/experience_section.html
     components/toast.html
 static/
     css/style.css
+    css/experiences.css
     js/theme.js
     js/toast.js
+    js/experiences.js
     img/
 ```
 
@@ -218,6 +243,61 @@ Hasil verifikasi lokal oleh Codex pada 5 Oktober 2026: seluruh 48 unit test lulu
 
 ---
 
+### Tugas 6
+
+Bagian tugas pribadi tetap memakai model `Certification` yang dibangun sejak Tugas 2 dan dikembangkan pada Tugas 3–5. Implementasi Tutorial 07 sebelumnya juga sudah diterapkan pada model ini. Pada iterasi Tugas 6, edit Certifications dilengkapi lewat API, dan model `Experience` yang sudah ada memperoleh rangkaian API serta antarmuka tersendiri. Perubahan ini tidak mengganti riwayat pengerjaan sebelumnya atau membuktikan pemenuhan tenggat prasyarat Tutorial 07.
+
+Yang dikerjakan:
+
+1. Mempertahankan `CertificationSerializer` dan menambahkan `ExperienceSerializer`, dengan `fields` eksplisit, pembersihan judul/deskripsi melalui `validate_<field>`, serta informasi star yang hanya dapat dibaca.
+2. Melengkapi daftar, detail, create, PUT/PATCH, delete, dan toggle star untuk dua model di `/api/v1/`. Experience mempertahankan UUID dan data lamanya; relasi star ditambahkan melalui migrasi. Sesuai model sebelumnya, `started_at` adalah waktu pencatatan otomatis yang read-only, sedangkan `ended_at` opsional dan boleh kosong untuk pengalaman yang masih berlangsung.
+3. Memakai `SessionAuthentication`, `IsPortfolioOwnerOrEditorOrReadOnly`, dan `IsAuthenticated` pada endpoint yang sesuai. Akun pemberi star selalu berasal dari `request.user`.
+4. Mengintegrasikan perubahan data lewat AJAX, termasuk edit untuk Editor/pemilik, CSRF pada setiap request mutasi, toast kesalahan API, dan escaping saat membangun tampilan.
+5. Menambah pengujian API, validasi, peran, perubahan database, serta login session dengan pemeriksaan CSRF aktif. Test Certifications dari Tutorial 07 tetap menjadi bagian dari suite `main`.
+
+| Peran | Daftar/detail | Star/unstar | PUT/PATCH | Tambah/hapus |
+|---|---|---|---|---|
+| Pengunjung | Ya | Tidak | Tidak | Tidak |
+| Pengguna biasa | Ya | Ya, akun sendiri | Tidak | Tidak |
+| Grup `Editor` | Ya | Ya, akun sendiri | Ya | Tidak |
+| Superuser | Ya | Ya, akun sendiri | Ya | Ya |
+
+Peta checklist implementasi:
+
+| Checklist | Lokasi dan cara memeriksa |
+|---|---|
+| Serializer eksplisit, validasi teks, star read-only, tanpa email/password | `main/serializers.py`; kirim teks hanya tag HTML dan field star palsu, lalu periksa respons dan database. |
+| Otorisasi empat peran di server | `main/permissions.py`, `main/api_views.py`; penolakan diuji bersama nilai database sesudah request. View form sertifikasi lama tetap membatasi create/delete ke pemilik. |
+| Function-based API, session, pencarian, URL unik | `main/api_views.py`, `main/api_urls.py`; gunakan namespace `api`, ID integer untuk Certification dan UUID untuk Experience. |
+| Status HTTP | Create 201; validasi 400; izin/CSRF 403; objek tidak ada 404; delete 204 dengan body kosong. |
+| Daftar/cari/tambah/edit/star/hapus tanpa reload | Halaman Certifications dan bagian Experience memakai endpoint DRF, dengan pesan API 400/403 melalui toast. |
+| CSRF dan escaping | Token tersedia di halaman untuk semua peran; mutasi mengirim `X-CSRFToken`; nilai teks di-escape atau dimasukkan lewat `textContent`. |
+| Test API, validasi, star, dan database pada penolakan | `main/tests_api.py`, `main/tests_api_integration.py`, `main/tests_permissions.py`, `main/tests_experience_api.py`, dan regresi halaman/jalur lama di `main/tests_assignment6.py`. |
+| Login dan CSRF nyata | Test memakai `APIClient(enforce_csrf_checks=True)` serta `.login()`, menolak request tanpa token dan menerima aksi yang diizinkan ketika token benar. |
+| Eksekusi dan regresi | Jalankan `python manage.py test main`, `python manage.py check`, `python manage.py makemigrations --check --dry-run`, lalu periksa kedua halaman dan Browsable API dengan `runserver`. |
+
+Untuk pemeriksaan manual, buka `/api/v1/certifications/` dan `/api/v1/experiences/` di browser. Login lewat `/api-auth/login/` untuk mencoba request berdasarkan peran. Pada halaman portofolio, coba pencarian kosong, tambah, edit, star/unstar, dan hapus sambil memeriksa Network: aksi menggunakan endpoint `/api/v1/`, status sesuai, dan tidak memuat ulang dokumen. Coba juga session Editor dan pengguna biasa, bukan hanya pemilik.
+
+Hasil verifikasi lokal oleh Codex pada 7 November 2026: **136 test lulus** pada salinan proyek bersih dalam 54,466 detik, mencakup 106 test lama dan 30 test baru. Pengujian ulang pada proyek lokal asli juga lulus 136 test dalam 53,371 detik, termasuk ketika perubahan latihan yang belum di-commit tetap tersedia. `manage.py check` tidak menemukan masalah, `makemigrations --check --dry-run` tidak menemukan migrasi tertinggal, dan `python -m pip check` tidak menemukan dependency yang rusak. Migrasi dan `runserver` berhasil dijalankan pada database uji terpisah di port 8766; kedua Browsable API mengembalikan 200. Pengujian Edge headless mencakup empat peran pada kedua bagian, debounce, hasil kosong, pemulihan error, create 201/PATCH/delete 204 tanpa reload, toast 400/403, escaping XSS, CSRF pada setiap mutasi, dan pencegahan submit ganda. Tampilan serta modal diperiksa pada lebar 390 px dalam tema gelap/terang, tanpa error JavaScript. Migrasi juga sudah diterapkan pada proyek lokal asli; perbandingan fingerprint sebelum/sesudah memastikan data Experience, Certification, relasi star lama, dan akun pengguna tetap utuh.
+
+Pertanyaan reflektif:
+
+1. **REST dan perbedaan PUT/PATCH.** REST adalah gaya arsitektur yang mengatur interaksi klien dan server melalui representasi resource. Batasannya mencakup pemisahan client-server, stateless, cache, antarmuka seragam, sistem berlapis, dan code-on-demand yang opsional. JSON hanya format representasi; mengembalikan JSON belum membuktikan batasan tersebut terpenuhi. Pemakaian URI resource, method dan status HTTP yang tepat membantu, sedangkan antarmuka seragam juga mencakup pesan yang menjelaskan dirinya serta navigasi melalui hypermedia. Proyek ini mengikuti pola API berbasis resource dari tutorial dan memakai session login, sehingga saya tidak mengklaim seluruh batasan REST murni sudah dipenuhi. [Fielding, REST](https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
+
+   PUT menyatakan representasi pengganti resource; cocok ketika seluruh data yang bisa diedit dikirim, misalnya judul, deskripsi, tahun, dan status unggulan sertifikasi. PATCH menyatakan perubahan sebagian; cocok untuk mengganti `{"title": "Judul baru"}` tanpa mengirim field lain. Pada DRF, PATCH memakai `partial=True`; PUT tetap memvalidasi field wajib. Field read-only tidak menjadi input pada keduanya. PUT bersifat idempotent; sifat idempotent PATCH bergantung pada operasinya. [RFC 9110: PUT](https://www.rfc-editor.org/rfc/rfc9110.html#name-put), [RFC 5789: PATCH](https://www.rfc-editor.org/rfc/rfc5789.html#section-2).
+
+2. **Peran serializer.** Serializer mengubah objek model menjadi tipe data Python yang dapat dirender sebagai JSON, sekaligus memeriksa data masukan sebelum disimpan. `ModelSerializer` mengambil aturan field dari model; daftar `fields` eksplisit mengendalikan data yang tampil. Di proyek ini, `validate_title` dan `validate_description` membersihkan tag HTML dan menolak hasil kosong. `star_count` dan `is_starred` dihitung server, sehingga klien tidak bisa menentukan jumlah star atau akun pemberinya. Dibanding menyusun dictionary dengan `JsonResponse`, aturan representasi, validasi, create, dan update terpusat serta dapat diuji ulang. `JsonResponse` sendiri hanya mengirim JSON; validasi dan penyimpanan tetap perlu dibuat terpisah. [Dokumentasi serializer DRF](https://www.django-rest-framework.org/api-guide/serializers/).
+
+3. **Autentikasi dan otorisasi.** Autentikasi menentukan identitas pengirim request; `SessionAuthentication` membaca session login Django dan mengisi `request.user`. Otorisasi menentukan tindakan yang boleh dilakukan identitas tersebut. Contohnya, Editor berhasil login tetapi tetap ditolak ketika POST untuk membuat data atau DELETE; ia boleh PUT/PATCH. Tombol tersembunyi hanya mengatur tampilan, karena pengguna masih dapat mengirim request langsung lewat browser, curl, atau aplikasi lain. Karena itu permission diperiksa server sebelum data ditulis. Endpoint star memakai `IsAuthenticated`, sedangkan identitasnya diambil dari session, bukan ID dalam body. [Dokumentasi autentikasi DRF](https://www.django-rest-framework.org/api-guide/authentication/).
+
+4. **Session dan CSRF.** Browser menyertakan cookie session secara otomatis pada request yang memenuhi aturan cookie. Situs lain dapat mencoba memicu aksi memakai session korban, sehingga request yang mengubah data tetap memerlukan pemeriksaan CSRF. AJAX mengirim token lewat `X-CSRFToken`; server menolak token hilang atau salah. JSON tidak menggantikan perlindungan ini. [SessionAuthentication DRF](https://www.django-rest-framework.org/api-guide/authentication/#sessionauthentication).
+
+   `force_authenticate` melewati proses autentikasi sebenarnya, sehingga cocok untuk menguji izin tetapi tidak membuktikan login session dan CSRF. Pengujian CSRF memakai `APIClient(enforce_csrf_checks=True)` dan `.login()`: akses halaman untuk memperoleh cookie/token, lakukan request tanpa token dan pastikan 403 serta database tidak berubah, lalu ulangi dengan token untuk aksi yang memang diizinkan. [Pengujian CSRF DRF](https://www.django-rest-framework.org/api-guide/testing/#csrf-validation).
+
+Pengumpulan memakai tautan commit akhir GitHub yang telah di-push, bukan hanya tautan repositori. Status deployment PWS dan pengumpulan di SCELE perlu diperiksa terpisah dari hasil test lokal.
+
+---
+
 ## AI Disclosure
 
 **Tools yang dipakai:** Claude (Anthropic), claude.ai.
@@ -321,5 +401,19 @@ Ringkasan log prompting:
 5. Meminta tampilan Certifications, login, dan buat akun diperbaiki agar lebih profesional. Codex merapikan pencarian/filter menjadi panel dengan pilihan pill, kartu sertifikasi, header, serta layout login/registrasi; menambahkan komponen `auth_fields.html`, `auth_story.html`, dan `auth.js`. Form autentikasi tetap memakai subclass form bawaan Django. Verifikasi browser mencakup gelap/terang di desktop, lebar mobile 390 px, tampil/sembunyikan password, penolakan konfirmasi password yang berbeda, registrasi berhasil, login salah/benar, serta pengujian ulang fitur AJAX. Seluruh pengujian memakai database test terpisah.
 
 Keterbatasan: jawaban reflektif di atas merupakan draf yang dibantu Codex dan perlu ditinjau agar sesuai pemahaman pribadi. Pengujian lokal tidak membuktikan keberhasilan deployment PWS, status pengumpulan SCELE, atau pemenuhan tenggat prasyarat Tutorial 05.
+
+### Tugas 6
+
+Tools pada sesi ini: OpenAI Codex, dengan pemeriksaan dokumentasi resmi DRF, disertasi REST Fielding, dan RFC HTTP untuk jawaban reflektif.
+
+Bagian yang dibantu AI: membaca `tugas-6.pdf` dan kode yang ada, memetakan checklist, menambahkan API serta star untuk Experience, melengkapi edit Certifications lewat API, membantu antarmuka AJAX, menulis pengujian peran/validasi/CSRF, dan menyusun dokumentasi serta draf jawaban reflektif. Codex juga membantu memisahkan perubahan menjadi commit berdasarkan bagian pekerjaan yang selesai dan memeriksa hasil sebelum push.
+
+Ringkasan log prompting:
+
+1. Pengguna memberikan `tugas-6.pdf` dan meminta commit/push bertahap serta seluruh checklist diperiksa.
+2. Codex membaca ketentuan, riwayat proyek, dan file lokal. Ditemukan bahwa model Certification sudah dipakai untuk tugas pribadi sekaligus implementasi Tutorial 07 sebelumnya.
+3. Pengerjaan diarahkan untuk mempertahankan Certification, melengkapi edit API-nya, dan menambahkan implementasi DRF terpisah pada Experience yang sudah ada. Backend, antarmuka, dokumentasi, dan pemeriksaan dibagi sebagai pekerjaan terpisah.
+
+Keterbatasan dan evaluasi: AI sebelumnya menerapkan tutorial pada model tugas pribadi; koreksi sekarang didokumentasikan tanpa mengubah riwayat. Draf refleksi masih perlu ditinjau pemilik proyek agar sesuai pemahamannya. Verifikasi lokal tidak membuktikan deployment PWS atau pengumpulan SCELE. Waktu commit mengikuti pekerjaan yang benar-benar dilakukan; tanggal dan jeda tidak direkayasa.
 
 
