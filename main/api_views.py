@@ -9,9 +9,22 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from main.models import Certification, Experience
-from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly
-from main.serializers import CertificationSerializer, ExperienceSerializer
+from main.models import Certification, Experience, Project
+from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly, IsPortfolioOwnerOrReadOnly
+from main.serializers import CertificationSerializer, ExperienceSerializer, ProjectSerializer
+
+
+@api_view(["GET", "HEAD", "POST"])
+@permission_classes([IsPortfolioOwnerOrReadOnly])
+def project_list(request):
+    if request.method in ("GET", "HEAD"):
+        projects = Project.objects.order_by("title", "pk")
+        return Response(ProjectSerializer(projects, many=True).data)
+
+    serializer = ProjectSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "HEAD", "POST"])
