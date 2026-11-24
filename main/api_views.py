@@ -14,6 +14,14 @@ from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly, IsPortfolioOwne
 from main.serializers import CertificationSerializer, ExperienceSerializer, ProjectSerializer
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def api_logout(request):
+    if request.auth is not None:
+        request.auth.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @api_view(["GET", "HEAD", "POST"])
 @permission_classes([IsPortfolioOwnerOrReadOnly])
 def project_list(request):

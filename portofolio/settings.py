@@ -38,6 +38,25 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "umar-faiz-myportofolio.pws.cs.ui.ac.
 
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
+if not PRODUCTION:
+    ALLOWED_HOSTS.append("10.0.2.2")  # Android emulator's address for this host.
+
+CORS_URLS_REGEX = r"^/api/v1/.*$"
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+# Flutter Web uses a different loopback port on each development run.
+CORS_ALLOWED_ORIGIN_REGEXES = [] if PRODUCTION else [
+    r"^http://(?:localhost|127\.0\.0\.1)(?::[0-9]+)?$",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
 
 # Application definition
 
@@ -50,11 +69,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'portofolio',
     'main',
+    'corsheaders',
     "rest_framework",
+    "rest_framework.authtoken",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
