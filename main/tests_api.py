@@ -246,7 +246,7 @@ class CertificationListAPITests(APITestCase):
         for role in (None, "member", "staff", "editor"):
             with self.subTest(role=role):
                 response = self.client_for(role).post(self.url, self.payload, format="json")
-                self.assertEqual(response.status_code, 403)
+                self.assertEqual(response.status_code, 401 if role is None else 403)
                 self.assertEqual(Certification.objects.count(), 4)
 
     def test_owner_session_create_requires_a_valid_csrf_token(self):
@@ -419,7 +419,7 @@ class CertificationDetailAPITests(APITestCase):
             for method in ("put", "patch"):
                 with self.subTest(role=role, method=method):
                     response = getattr(client, method)(self.url, self.payload, format="json")
-                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(response.status_code, 401 if role is None else 403)
                     self.assertEqual(self.saved_state(), before)
 
     def test_owner_delete_removes_only_target_and_its_star_relations(self):
@@ -442,7 +442,7 @@ class CertificationDetailAPITests(APITestCase):
         before = self.saved_state()
         for role in (None, "member", "staff", "editor"):
             with self.subTest(role=role):
-                self.assertEqual(self.client_for(role).delete(self.url).status_code, 403)
+                self.assertEqual(self.client_for(role).delete(self.url).status_code, 401 if role is None else 403)
                 self.assertEqual(self.saved_state(), before)
 
     def test_put_requires_title_description_and_year_without_partial_save(self):
@@ -582,7 +582,7 @@ class CertificationStarAPITests(APITestCase):
     def test_anonymous_requests_are_denied_without_changing_stars(self):
         for method in ("get", "post"):
             with self.subTest(method=method):
-                self.assertEqual(getattr(self.client, method)(self.url).status_code, 403)
+                self.assertEqual(getattr(self.client, method)(self.url).status_code, 401)
         self.assertEqual(list(self.target.starred_by.all()), [self.other_user])
 
     def test_members_editors_and_owner_can_toggle_only_their_own_star(self):

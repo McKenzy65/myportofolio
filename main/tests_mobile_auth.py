@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 
-from main.models import Project
+from main.models import Certification, Project
 
 
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
@@ -36,6 +36,28 @@ class MobileAuthTests(APITestCase):
         self.assertEqual(client.post(self.projects_url, self.payload, format="json").status_code, 401)
         self.assertEqual(client.post(self.logout_url).status_code, 401)
         self.assertTrue(Token.objects.filter(pk=other.pk).exists())
+
+    def test_certification_token_create_public_detail_and_revocation(self):
+        url = reverse("api:certification-list")
+        payload = {"title": "Mobile QA", "description": "Portfolio", "year": 2026}
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertEqual(client.get(url).status_code, 200)
+        self.assertEqual(client.post(url, payload, format="json").status_code, 401)
+        member_token = Token.objects.create(user=self.member)
+        client.credentials(HTTP_AUTHORIZATION=f"Token {member_token.key}")
+        self.assertEqual(client.post(url, payload, format="json").status_code, 403)
+
+        token = Token.objects.create(user=self.owner)
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        created = client.post(url, payload, format="json")
+        self.assertEqual(created.status_code, 201)
+        detail_url = reverse("api:certification-detail", args=[created.data["id"]])
+        self.assertEqual(APIClient().get(detail_url).data, created.data)
+        token.delete()
+        rejected = client.post(url, payload, format="json")
+        self.assertEqual(rejected.status_code, 401)
+        self.assertEqual(rejected["WWW-Authenticate"], "Token")
+        self.assertEqual(Certification.objects.filter(title="Mobile QA").count(), 1)
 
     def test_wrong_password_anonymous_and_regular_token(self):
         invalid = {**self.credentials, "password": "incorrect"}

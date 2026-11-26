@@ -36,7 +36,6 @@ def project_list(request):
 
 
 @api_view(["GET", "HEAD", "POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def certification_list(request):
     if request.method in ("GET", "HEAD"):
@@ -94,7 +93,6 @@ def certification_list(request):
 
 
 @api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def certification_detail(request, certification_id):
     certification = get_object_or_404(
@@ -121,7 +119,6 @@ def certification_detail(request, certification_id):
 
 
 @api_view(["POST"])
-@authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def certification_star(request, certification_id):
     certification = get_object_or_404(Certification, pk=certification_id)

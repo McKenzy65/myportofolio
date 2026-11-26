@@ -63,7 +63,7 @@ class CertificationSessionIntegrationTests(APITestCase):
         denied_after_logout = client.post(
             self.list_url, self.payload, format="json", HTTP_X_CSRFTOKEN=token,
         )
-        self.assertEqual(denied_after_logout.status_code, 403)
+        self.assertEqual(denied_after_logout.status_code, 401)
         self.assertEqual(Certification.objects.count(), 2)
 
     def test_editor_session_can_update_but_cannot_create_or_delete(self):
