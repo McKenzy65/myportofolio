@@ -81,6 +81,22 @@ class MobileAuthTests(APITestCase):
         self.assertEqual(client.post(self.logout_url, HTTP_X_CSRFTOKEN=csrf).status_code, 204)
         self.assertTrue(Token.objects.filter(pk=token.pk).exists())
 
+    @override_settings(CORS_ALLOWED_ORIGINS=["http://localhost:7357"], CORS_ALLOWED_ORIGIN_REGEXES=[])
+    def test_hosted_api_only_allows_the_configured_demo_origin(self):
+        url = reverse("api:certification-list")
+        for origin, allowed in [
+            ("http://localhost:7357", True),
+            ("http://localhost:7358", False),
+            ("https://outside.example", False),
+        ]:
+            with self.subTest(origin=origin):
+                response = self.client.options(
+                    url, HTTP_ORIGIN=origin, HTTP_ACCESS_CONTROL_REQUEST_METHOD="POST",
+                    HTTP_ACCESS_CONTROL_REQUEST_HEADERS="authorization,content-type",
+                )
+                self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), origin if allowed else None)
+                self.assertNotIn("Access-Control-Allow-Credentials", response.headers)
+
     def test_local_web_origin_and_emulator_host(self):
         origin = "http://localhost:57226"
         preflight = self.client.options(

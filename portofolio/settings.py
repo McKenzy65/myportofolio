@@ -42,8 +42,11 @@ if not PRODUCTION:
     ALLOWED_HOSTS.append("10.0.2.2")  # Android emulator's address for this host.
 
 CORS_URLS_REGEX = r"^/api/v1/.*$"
+# Fixed origin for the Flutter Web demo against PWS. Deployments can replace
+# or remove it through CORS_ALLOWED_ORIGINS without accepting other origins.
 CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:7357").split(",")
     if origin.strip()
 ]
 # Flutter Web uses a different loopback port on each development run.
